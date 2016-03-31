@@ -5,7 +5,7 @@ import image
 
 # Convert geo coords (lat, lng) diff to distance in meters
 # lat: 0.0001 ~= 11.1m, lng 0.0001 ~= 8.5m
-def geo_distance(ori, dst, method='vincenty'):
+def geoDistance(ori, dst, method='vincenty'):
 	if method == 'vincenty':
 		distance = gpy.vincenty(ori, dst).meters
 	elif method == 'great_circle':
@@ -37,12 +37,12 @@ def hexagon(origin = (0, 0), radius = 20, interval = 1):
 		# 4 o---o---o 1
 		#    \ / \ /
 		#   5 o---o 6
-		layer_list.append(image.Location((origin[0] + unit_length, origin[1]), lyr))  
-		layer_list.append(image.Location((origin[0] + unit_length / 2, origin[1] + height_length), lyr)) 
-		layer_list.append(image.Location((origin[0] - unit_length / 2, origin[1] + height_length), lyr))
-		layer_list.append(image.Location((origin[0] - unit_length, origin[1]), lyr))  
-		layer_list.append(image.Location((origin[0] - unit_length / 2, origin[1] - height_length), lyr))  
-		layer_list.append(image.Location((origin[0] + unit_length / 2, origin[1] - height_length), lyr))
+		layer_list.append(image.Location((origin[0] + unit_length, origin[1]), lyr)) # 1
+		layer_list.append(image.Location((origin[0] + unit_length / 2, origin[1] + height_length), lyr)) # 2
+		layer_list.append(image.Location((origin[0] - unit_length / 2, origin[1] + height_length), lyr)) # 3
+		layer_list.append(image.Location((origin[0] - unit_length, origin[1]), lyr)) # 4
+		layer_list.append(image.Location((origin[0] - unit_length / 2, origin[1] - height_length), lyr)) # 5 
+		layer_list.append(image.Location((origin[0] + unit_length / 2, origin[1] - height_length), lyr)) # 6
 
 		# number of points on an edge exclude two vertices
 		no_point_on_edge = lyr - 1 
