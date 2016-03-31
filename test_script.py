@@ -1,23 +1,39 @@
-import http_handler
-import file_handler
-import my_util
+import http_handler as hh
+import file_handler as fh
+import my_util as mu
+import matplotlib.pyplot as plt
+import image
+
+file_path = "/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/image/"
 
 # Identify image in a circle area centered at center(lat, lng) with radius(meter)
 # interval(lat_interval, lng_interval)
-# def find_in_range(center, radius, interval=(10), args):
-# 	sample_list = [center]
+def find_in_range(point_list, cameraPara = None):
+	for pt in point_list:
+		# Format file name with parameters
+		# file_name = file_path.join([
+		# 	pt.geo[0], '_', 
+		# 	pt.geo[1], '_', 
+		# 	cameraPara.heading, 
+		# 	'.jpg'])
+		file_name = '%s%f_%f_%d.jpg' % (file_path, pt.geo[0], pt.geo[1], cameraPara.heading)
 
-# 	size = args.get('size', (800, 800))
-# 	fov = agrs.get('fov', 120)
-# 	heading = args.get('heading', [0, 90, 180, 270])
-# 	pitch = args.get('pitch', 10)
+		# Encode http post parameters
+		encoded_args = hh.encode_args(pt.geo, 
+			cameraPara.size, cameraPara.fov, cameraPara.heading, cameraPara.pitch)
 
+		# Http Request and Save file as file_name
+		fh.img2file(hh.get_img(encoded_args), file_name)
 
 
 if __name__ == '__main__':
-	encoded_args = http_handler.encode_args(location = [40.694305,-73.983298]);
-	file_path = "/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/image/test.jpeg"
+	origin = [40.69435,-73.98329]
 
-	file_handler.img2file(http_handler.get_img(encoded_args), file_path)
-	# print my_util.geo2dist([40.720032, -73.988354], [1, 1])
-	# print my_util.dist2geo([40.720032, -73.988354], [20, 20])
+	# encoded_args = http_handler.encode_args(origin);
+	# file_path = "/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/image/test.jpeg"
+
+	# file_handler.img2file(http_handler.get_img(encoded_args), file_path)
+	
+	pt_list = mu.hexagon(origin, 0.0003, 0.00005)
+
+	find_in_range(pt_list, image.CameraPara((800, 800), 120, 90, 10))
