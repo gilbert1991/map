@@ -1,9 +1,12 @@
 import requests
+import file_handler as fh
 
 # Google stree view api 
 api_base = "https://maps.googleapis.com/maps/api/streetview"
 # Google api key
 api_key = "AIzaSyAy8rcIJOZVRW4gGNvwkkGYv3x0ZJqC2IU"
+
+file_path = "/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/image/test/"
 
 # Encode custom api arguments
 def encodeArgs(location=None, size=(800, 800), fov=120, heading=90, pitch=0):
@@ -25,6 +28,11 @@ def getImg(encoded_args):
 		print "Request http error: %d" % response.status_code
 	else:
 		return response
+
+if __name__ == '__main__':
+	origin = [40.69415,-73.98329]
+	encoded_args = encodeArgs(origin, size=(800, 800), fov=120, heading=90, pitch=10);
+	fh.img2File(getImg(encoded_args), file_path + "test_2.jpeg") # Load starting image
 
 
 
