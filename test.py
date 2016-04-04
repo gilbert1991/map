@@ -79,28 +79,36 @@ if __name__ == '__main__':
 
 	img1 = cv2.imread(file_path + 'test_1.jpeg',0) # queryImage
 	img2 = cv2.imread(file_path + 'test_2.jpeg',0) # trainImage
+	
+	# Initiate SIFT detector
+	sift = cv2.SIFT()
 
-	# Create ORB detector with 1000 keypoints with a scaling pyramid factor
-	# of 1.2
-	orb = cv2.ORB(1000, 1.2)
+	# find the keypoints and descriptors with SIFT
+	kp1, des1 = sift.detectAndCompute(img1,None)
+	kp2, des2 = sift.detectAndCompute(img2,None)
 
-	# Detect keypoints of original image
-	(kp1,des1) = orb.detectAndCompute(img1, None)
+	# FLANN parameters
+	FLANN_INDEX_KDTREE = 0
+	index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+	search_params = dict(checks=50)   # or pass empty dictionary
 
-	# Detect keypoints of rotated image
-	(kp2,des2) = orb.detectAndCompute(img2, None)
+	flann = cv2.FlannBasedMatcher(index_params,search_params)
 
-	# Create matcher
-	bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+	matches = flann.knnMatch(des1,des2,k=2)
 
-	# Do matching
-	matches = bf.match(des1,des2)
+	# Need to draw only good matches, so create a mask
+	matchesMask = [[0,0] for i in xrange(len(matches))]
 
-	# Sort the matches based on distance.  Least distance
-	# is better
-	matches = sorted(matches, key=lambda val: val.distance)
+	# ratio test as per Lowe's paper
+	for i,(m,n) in enumerate(matches):
+	    if m.distance < 0.7*n.distance:
+	        matchesMask[i]=[1,0]
 
-	# Show only the top 10 matches - also save a copy for use later
-	out = drawMatches(img1, kp1, img2, kp2, matches[:5])
+	draw_params = dict(matchColor = (0,255,0),
+	                   singlePointColor = (255,0,0),
+	                   matchesMask = matchesMask,
+	                   flags = 0)
+
+	img3 = cv2.drawMatchesKnn(img1,kp1,img2,kp2,matches,None,**draw_params)
 
 	plt.imshow(img3,),plt.show()

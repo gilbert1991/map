@@ -6,8 +6,6 @@ api_base = "https://maps.googleapis.com/maps/api/streetview"
 # Google api key
 api_key = "AIzaSyAy8rcIJOZVRW4gGNvwkkGYv3x0ZJqC2IU"
 
-file_path = "/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/image/test/"
-
 # Encode custom api arguments
 def encodeArgs(location=None, size=(800, 800), fov=120, heading=90, pitch=0):
 	query_args = { 	# location can be string or (lat, lng) pair
@@ -28,6 +26,22 @@ def getImg(encoded_args):
 		print "Request http error: %d" % response.status_code
 	else:
 		return response
+
+# Identify image in a circle area centered at center(lat, lng) with radius(meter)
+# interval(lat_interval, lng_interval)
+def buildDataset(dataset_path, point_list, cameraPara = None):
+	for pt in point_list:
+		# Format file name with parameters
+		file_name = '%s%f_%f_%d.jpeg' % (dataset_path, pt.geo[0], pt.geo[1], cameraPara.heading)
+
+		# Encode http post parameters
+		encoded_args = encodeArgs(pt.geo, cameraPara.size, cameraPara.fov, cameraPara.heading, cameraPara.pitch)
+
+		# Http Request and Save file as file_name
+		fh.img2File(getImg(encoded_args), file_name)
+
+	print "Build dataset of %d images" % len(point_list)
+
 
 if __name__ == '__main__':
 	origin = [40.69415,-73.98329]
