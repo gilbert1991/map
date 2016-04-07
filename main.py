@@ -23,11 +23,13 @@ def queryImage(location, cameraPara):
 
 	return query
 
-def sampleLocation(query, cameraPara):
+def sampleLocation(query, radius, interval, cameraPara):
 	# 2. Generate priority list of sample locations
-	pt_list = mt.hexagon(query.location.geo, 0.0010, 0.0001)
+	pt_list = mt.hexagon(query.location.geo, radius, interval)
 	# Load all images in the list of sample locations
-	hh.buildDataset(file_path + "image/dataset/", pt_list, cameraPara)
+
+	if cameraPara != None:
+		hh.buildDataset(file_path + "image/dataset/", pt_list, cameraPara)
 
 	return pt_list
 
@@ -36,7 +38,7 @@ def featureExtraction():
 	_, des_test = ftr.siftExtraction(file_path + "image/test/test.jpeg") # query image
 	kp_list, des_list = ftr.patchExtraction(file_path + "image/dataset/", ".jpeg") # dataset images
 	fh.writeList(des_list, file_path + "sift_des.txt")
-	fh.writeList(kp_list, file_path + "sift_kp.txt")
+	# fh.writeList(kp_list, file_path + "sift_kp.txt")
 	# des_list = fh.readList(file_path + "sift_des.txt")
 	# kp_list = fh.readList(file_path + "sift_kp.txt")
 
@@ -44,14 +46,18 @@ def featureExtraction():
 
 def featureRegistration(dataset, testset):
 	# Feature Registration
-	args = {'algorithm': 'kmeans', 'branching': 32, 'iterations': 9, 'checks': 10}
-	result, dist = rgstr.FLANN(dataset, testset, 5, args)
+	args = {'algorithm': 'kmeans', 'branching': 32, 'iterations': 12, 'checks': 10}
+	result, dist = rgstr.FLANN(dataset, testset, 3, args)
 
 	return result, dist
 
 def neighborVoting(pt_list, result, dist, index):
 	# Voting with the distances
 	votes = numpy.zeros(len(pt_list))
+
+	# Add a small value to dist to avoid divided by 0
+	dist = [ d + 1e-10 for d in dist ]
+
 	for rslt, dt in zip(result, dist):
 		position = numpy.searchsorted(index, rslt)
 		weight = 1 / dt
@@ -70,9 +76,10 @@ def plotMap(pt_list, votes):
 
 if __name__ == '__main__':
 	
-	query = queryImage(obj.Location([40.69435,-73.98329], 0), obj.CameraPara(size=(800, 800), fov=100, heading=90, pitch=10))
+	query = queryImage(obj.Location([40.69435,-73.98329], 0), obj.CameraPara(size=(800, 800), fov=100, heading=270, pitch=10))
 
-	pt_list = sampleLocation(query, obj.CameraPara(size=(800, 800), fov=100, heading=90, pitch=10))
+	pt_list = sampleLocation(query, 0.0008, 0.0001, obj.CameraPara(size=(800, 800), fov=100, heading=270, pitch=10))
+	# pt_list = sampleLocation(query, 0.0005, 0.0001, None)
 
 	des_test, des_list = featureExtraction()
 
@@ -80,7 +87,6 @@ if __name__ == '__main__':
 	index = [0]
 	for des in des_list: 
 		index.append(index[-1] + len(des))
-		print index[-1]
 	index.pop(0)
 
 	result, dist = featureRegistration(numpy.vstack(des_list), numpy.array(des_test))
