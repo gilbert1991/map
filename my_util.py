@@ -23,6 +23,8 @@ def geoDistance(ori, dst, method='vincenty'):
 
 # Sample Location Generation
 def hexagon(origin = (0, 0), radius = 20, interval = 1):
+
+	print 'Generating hexagon points...'
 	# init point list with origin at layer 0
 	point_list = [obj.Location((origin[0], origin[1]), layer = 0)] 
 
@@ -66,6 +68,8 @@ def hexagon(origin = (0, 0), radius = 20, interval = 1):
 			for pt in range(1, no_point_on_edge + 1):
 				point_list.append(obj.Location((v_start.geo[0] - pt * lat_diff, v_start.geo[1] - pt * lng_diff), lyr))
 
+	print '%d points and %d layers generated' % len(point_list), no_layer
+	
 	return point_list
 
 def plot3D(X, Y, Z):

@@ -7,14 +7,14 @@ api_base = "https://maps.googleapis.com/maps/api/streetview"
 api_key = "AIzaSyAy8rcIJOZVRW4gGNvwkkGYv3x0ZJqC2IU"
 
 # Encode custom api arguments
-def encodeArgs(location=None, size=(800, 800), fov=120, heading=90, pitch=0):
+def encodeArgs(location, cameraPara):
 	query_args = { 	# location can be string or (lat, lng) pair
 					'location': location if isinstance(location, str) else '%f, %f' % (location[0], location[1]),
 					# (width x height), default 800 x 800
-					'size': '%dx%d' % size,
-					'fov': fov,
-					'heading': heading,
-					'pitch': pitch,
+					'size': '%dx%d' % cameraPara.size,
+					'fov': cameraPara.fov,
+					'heading': cameraPara.heading,
+					'pitch': cameraPara.pitch,
 					'key': api_key }
 
 	return query_args
@@ -35,7 +35,7 @@ def buildDataset(dataset_path, point_list, cameraPara = None):
 		file_name = '%s%f_%f_%d.jpeg' % (dataset_path, pt.geo[0], pt.geo[1], cameraPara.heading)
 
 		# Encode http post parameters
-		encoded_args = encodeArgs(pt.geo, cameraPara.size, cameraPara.fov, cameraPara.heading, cameraPara.pitch)
+		encoded_args = encodeArgs(pt.geo, cameraPara)
 
 		# Http Request and Save file as file_name
 		fh.img2File(getImg(encoded_args), file_name)

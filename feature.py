@@ -22,6 +22,8 @@ def siftExtraction(img_in, img_out=None):
 		p = {'pt': kp.pt, 'size': kp.size, 'angle': kp.angle, 'response': kp.response, 'octave': kp.octave, 'id': kp.class_id}
 		point.append(p)
 
+	print 'SIFT extracted for %s' % fh.path_leaf(img_in)
+
 	return point, des
 
 # Feature Extraction of dataset
@@ -31,8 +33,9 @@ def patchExtraction(data_path, file_ext=None):
 
 	f_list = fh.listFiles(data_path, file_ext)
 
+	print "Extracting patch features..."
+	
 	for f in f_list:
-		print f
 		kp, des = siftExtraction(f)
 		kp_list.append(kp)
 		des_list.append(des)

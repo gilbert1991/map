@@ -7,6 +7,7 @@ import numpy.random as nr
 def FLANN(dataset, testset, K, kwargs):
 	flann = pfl.FLANN()
 
+	print "Start FLANN: K=%d, %s" % K, kwargs 
 	result,dists = flann.nn(dataset, testset, K=5, **kwargs)
 
 	return result, dists

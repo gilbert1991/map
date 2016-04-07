@@ -10,62 +10,92 @@ import feature as ftr
 
 file_path = "/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/"
 
-if __name__ == '__main__':
-	# Initialize the fields of query image 
+def queryImage(location, cameraPara):
+	# 1. Initialize the fields of query image 
 	query = obj.Image()
-	query.location = obj.Location([40.69435,-73.98329], 0)# Starting GPS
-	query.cameraPara = obj.CameraPara(size=(800, 800), fov=120, heading=90, pitch=0)
+	query.location = location # Starting GPS
+	query.cameraPara = cameraPara
 	query.filePath = file_path + "image/test/test.jpeg"
 
 	# Load query image
-	# encoded_args = hh.encodeArgs(query.location.geo);
-	# fh.img2File(hh.getImg(encoded_args), query.filePath) # Load starting image
-	
-	# Generate priority list of sample locations
-	pt_list = mt.hexagon(query.location.geo, 0.0003, 0.00005)
+	encoded_args = hh.encodeArgs(query.location.geo, query.cameraPara);
+	fh.img2File(hh.getImg(encoded_args), query.filePath)
+
+	return query
+
+def sampleLocation(query, cameraPara):
+	# 2. Generate priority list of sample locations
+	pt_list = mt.hexagon(query.location.geo, 0.0010, 0.0001)
 	# Load all images in the list of sample locations
-	# hh.buildDataset(file_path + "image/dataset/", pt_list, obj.CameraPara((800, 800), 120, 90, 10))
+	hh.buildDataset(file_path + "image/dataset/", pt_list, cameraPara)
 
-	# Feature Extraction 
-	# kp_list, des_list = ftr.patchExtraction(file_path + "image/dataset/", ".jpeg") # dataset images
-	# _, test = ftr.siftExtraction(file_path + "image/test/test.jpeg") # query image
+	return pt_list
 
-	# print numpy.array(test).shape
+def featureExtraction():
+	# 3. Feature Extraction 	
+	_, des_test = ftr.siftExtraction(file_path + "image/test/test.jpeg") # query image
+	kp_list, des_list = ftr.patchExtraction(file_path + "image/dataset/", ".jpeg") # dataset images
+	fh.writeList(des_list, file_path + "sift_des.txt")
+	fh.writeList(kp_list, file_path + "sift_kp.txt")
+	# des_list = fh.readList(file_path + "sift_des.txt")
+	# kp_list = fh.readList(file_path + "sift_kp.txt")
 
-	# fh.writeList(kp_list, file_path + "sift_kp.txt")
-	# fh.writeList(des_list, file_path + "sift_des.txt")
+	return des_test, des_list
 
-	# # kps = fh.readList(file_path + "sift_kp.txt")
-	# dess = fh.readList(file_path + "sift_des.txt")
+def featureRegistration(dataset, testset):
+	# Feature Registration
+	args = {'algorithm': 'kmeans', 'branching': 32, 'iterations': 9, 'checks': 10}
+	result, dist = rgstr.FLANN(dataset, testset, 5, args)
 
-	# index = [0]
-	# for des in dess: 
-	# 	index.append(index[-1] + len(des))
-	# 	print index[-1]
+	return result, dist
 
-	# index.pop(0)
+def neighborVoting(pt_list, result, dist, index):
+	# Voting with the distances
+	votes = numpy.zeros(len(pt_list))
+	for rslt, dt in zip(result, dist):
+		position = numpy.searchsorted(index, rslt)
+		weight = 1 / dt
+		votes[position] = votes[position] + weight
+		print (rslt, dt, position, weight)
 
-	# dess = numpy.vstack(dess)
+	fh.writeList(votes, file_path + "vote.txt")
 
-	# print dess.shape
+	return votes
 
-
-	# # Feature Registration
-	# args = {'algorithm': 'kmeans', 'branching': 32, 'iterations': 9, 'checks': 10}
-	# result, dist = rgstr.FLANN(dess, numpy.array(test), 5, args)
-
-	# votes = numpy.zeros(len(pt_list))
-	# for rslt, dt in zip(result, dist):
-	# 	position = numpy.searchsorted(index, rslt)
-	# 	weight = 1 / dt
-	# 	votes[position] = votes[position] + weight
-	# 	print (rslt, dt, position, weight)
-
-	# fh.writeList(votes, file_path + "vote.txt")
-	votes = fh.readList(file_path + "vote.txt")
-
+def plotMap(pt_list, votes):
+	# Plot vote map
 	geo_list = [pt.geo for pt in pt_list]
 	mt.plot3D([geo[0] for geo in geo_list], [geo[1] for geo in geo_list], votes)
+
+
+if __name__ == '__main__':
+	
+	query = queryImage(obj.Location([40.69435,-73.98329], 0), obj.CameraPara(size=(800, 800), fov=100, heading=90, pitch=10))
+
+	pt_list = sampleLocation(query, obj.CameraPara(size=(800, 800), fov=100, heading=90, pitch=10))
+
+	des_test, des_list = featureExtraction()
+
+	# Create list of #des in each image to indicate the  
+	index = [0]
+	for des in des_list: 
+		index.append(index[-1] + len(des))
+		print index[-1]
+	index.pop(0)
+
+	result, dist = featureRegistration(numpy.vstack(des_list), numpy.array(des_test))
+
+	votes = neighborVoting(pt_list, result, dist, index)
+	votes = numpy.zeros(len(pt_list))
+	votes = fh.readList(file_path + "vote.txt")
+	target = pt_list[votes.argmax(axis=0)]
+	print target.geo
+	
+	plotMap(pt_list, votes)
+
+	
+
+	
 
 
 
