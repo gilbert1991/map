@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
+
 import file_handler as fh
+import setting as st
 
 # Feature Extraction
 # kp - pt, size, andgle, response, octave
@@ -40,14 +42,14 @@ def patchExtraction(data_path, file_ext=None):
 		kp_list.append(kp)
 		des_list.append(des)
 
-	return kp_list, des_list#
+	return kp_list, des_list
 
 
 
 if __name__ == '__main__':
-	dataset = "/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/image/dataset"
-	img = "/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/image/test/test.jpeg"
-	sift = "/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/image/test/test_1_sift.jpeg"
+	dataset = st.path + "image/dataset"
+	img = st.path + "image/test/test.jpeg"
+	sift = st.path + "image/test/test_1_sift.jpeg"
 
 	point, des = siftExtraction(img)
 	print point[0]

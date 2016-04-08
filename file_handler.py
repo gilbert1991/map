@@ -4,6 +4,8 @@ import pickle
 import ntpath as nt
 import numpy as np
 
+import setting as st
+
 # Save valid image as file
 def img2File(response, file_path):
 	with open(file_path, 'wb') as f:
@@ -50,5 +52,5 @@ def path_leaf(path):
     return tail or nt.basename(head)
 
 if __name__ == '__main__':
-	votes = readList("/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/vote.txt")
+	votes = readList(st.path + "vote.txt")
 	print (len(votes), np.max(votes), np.min(votes))

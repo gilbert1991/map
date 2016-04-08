@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
+import setting as st
+
 def drawMatches(img1, kp1, img2, kp2, matches):
     """
     My own implementation of cv2.drawMatches as OpenCV 2.4.9
@@ -75,7 +77,7 @@ def drawMatches(img1, kp1, img2, kp2, matches):
     return out
 
 if __name__ == '__main__':
-	file_path = "/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/image/test/"
+	file_path = st.path + "image/test/"
 
 	img1 = cv2.imread(file_path + 'test_1.jpeg',0) # queryImage
 	img2 = cv2.imread(file_path + 'test_2.jpeg',0) # trainImage
