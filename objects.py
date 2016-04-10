@@ -8,10 +8,6 @@ class Image(object):
 		self.filePath = filePath
 		self.feature = feature	
 
-class Point(object, Location):
-	def __init__(self):
-		self.
-
 # Sample Location with geo-coord and the layer it in
 class Location(object):
 	def __init__(self, geo = None, layer = None):

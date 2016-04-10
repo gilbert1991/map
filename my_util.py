@@ -72,12 +72,20 @@ def hexagon(origin = (0, 0), radius = 20, interval = 1):
 
 	return point_list
 
-def plot3D(X, Y, Z):
-	fig = plt.figure()
-	ax = fig.add_subplot(111, projection='3d')
-	# X, Y, Z = axes3d.get_test_data(0.05)
-	ax.plot_wireframe(X, Y, Z, rstride=10, cstride=10)
+def plot3D(x, y, z):
+	# fig = plt.figure()
+	# ax = fig.add_subplot(111, projection='3d')
+	# # X, Y, Z = axes3d.get_test_data(0.05)
+	# ax.plot_wireframe(X, Y, Z, rstride=10, cstride=10)
 
+	# plt.show()
+
+	fig = plt.figure()
+	ax = fig.gca(projection='3d')
+
+	cmhot = plt.get_cmap("hot")
+	ax.scatter(x, y, z, s=50, c=np.abs(z), cmap=cmhot)
+	# ax.scatter(x, y, z, c=z)
 	plt.show()
 
 if __name__ == '__main__':

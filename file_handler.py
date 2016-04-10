@@ -53,4 +53,5 @@ def path_leaf(path):
 
 if __name__ == '__main__':
 	votes = readList(st.path + "vote.txt")
-	print (len(votes), np.max(votes), np.min(votes))
+	for vote in votes:
+		print (vote, np.max(vote), np.min(vote))

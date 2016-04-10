@@ -8,7 +8,8 @@ def FLANN(dataset, testset, K, kwargs):
 	flann = pfl.FLANN()
 
 	print "Start FLANN: K=%d, %s" % (K, kwargs)
-	result,dists = flann.nn(dataset, testset, K=5, **kwargs)
+	print "Dataset size: %d; Query size: %d" % (len(dataset), len(testset))
+	result,dists = flann.nn(dataset, testset, K, **kwargs)
 
 	return result, dists
 
@@ -18,7 +19,7 @@ if __name__ == '__main__':
 	testset = nr.rand(5, 4)
 
 	args = {'algorithm': 'kmeans', 'branching': 32, 'iterations': 9, 'checks': 10}
-	result, dists = FLANN(dataset, testset, 5, args)
+	result, dists = FLANN(dataset, testset, 2, args)
 	
 	for ds in dataset: print ds
 	for ts in testset: print ts

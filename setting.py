@@ -1,1 +1,1 @@
-path = "/home/jie/Documents/3D_Map/"
+path = "/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/"

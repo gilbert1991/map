@@ -18,8 +18,9 @@ def queryImage(location, cameraPara):
 	query.filePath = file_path + "image/test/test.jpeg"
 
 	# Load query image
-	encoded_args = hh.encodeArgs(query.location.geo, query.cameraPara);
-	fh.img2File(hh.getImg(encoded_args), query.filePath)
+	if cameraPara != None:
+		encoded_args = hh.encodeArgs(query.location.geo, query.cameraPara);
+		fh.img2File(hh.getImg(encoded_args), query.filePath)
 
 	return query
 
@@ -33,14 +34,17 @@ def sampleLocation(query, radius, interval, cameraPara):
 
 	return pt_list
 
-def featureExtraction():
+def featureExtraction(fromFile=False):
 	# 3. Feature Extraction 	
-	_, des_test = ftr.siftExtraction(file_path + "image/test/test.jpeg") # query image
-	kp_list, des_list = ftr.patchExtraction(file_path + "image/dataset/", ".jpeg") # dataset images
-	fh.writeList(des_list, file_path + "sift_des.txt")
-	# fh.writeList(kp_list, file_path + "sift_kp.txt")
-	# des_list = fh.readList(file_path + "sift_des.txt")
-	# kp_list = fh.readList(file_path + "sift_kp.txt")
+	if not(fromFile):
+		_, des_test = ftr.siftExtraction(file_path + "image/test/test.jpeg") # query image
+		kp_list, des_list = ftr.patchExtraction(file_path + "image/dataset/", ".jpeg") # dataset images
+		fh.writeList(des_list, file_path + "sift_des.txt")
+		# fh.writeList(kp_list, file_path + "sift_kp.txt")
+	else:
+		_, des_test = ftr.siftExtraction(file_path + "image/test/test.jpeg") # query image
+		des_list = fh.readList(file_path + "sift_des.txt")
+		# kp_list = fh.readList(file_path + "sift_kp.txt")
 
 	return des_test, des_list
 
@@ -51,22 +55,34 @@ def featureRegistration(dataset, testset):
 
 	return result, dist
 
-def neighborVoting(pt_list, result, dist, index):
+def neighborVoting(pt_list, result, dist):
+	# Create list of #des in each image to indicate the  
+	index = [0]
+	for des in des_list: 
+		index.append(index[-1] + len(des))
+	index.pop(0)
+
 	# Voting with the distances
 	votes = numpy.zeros(len(pt_list))
 
-	# Add a small value to dist to avoid divided by 0
-	dist = [ d + 1e-10 for d in dist ]
+	for rslt, dt in zip(result, dist):		
+		for r, d in zip(rslt, dt):
+			pos = numpy.searchsorted(index, r)
 
-	for rslt, dt in zip(result, dist):
-		position = numpy.searchsorted(index, rslt)
-		weight = 1 / dt
-		votes[position] = votes[position] + weight
-		print (rslt, dt, position, weight)
+			# Add a small value to dist to avoid divided by 0
+			weight = 1 / (d + 1e-7)
+			votes[pos] = votes[pos] + weight
+			# print "Observation %d in dataset with distance %f votes %f for location: %s" % (r, d, weight, pt_list[pos].geo)			
+
+	for v, pt in zip(votes, pt_list):
+		if v != 0:
+			print "%s has vote %d" % (pt.geo, v)
 
 	fh.writeList(votes, file_path + "vote.txt")
 
-	return votes
+	maxWeight = pt_list[votes.argmax(axis=0)]
+
+	return votes, maxWeight
 
 def plotMap(pt_list, votes):
 	# Plot vote map
@@ -76,27 +92,24 @@ def plotMap(pt_list, votes):
 
 if __name__ == '__main__':
 	
-	query = queryImage(obj.Location([40.69435,-73.98329], 0), obj.CameraPara(size=(800, 800), fov=100, heading=270, pitch=10))
+	# query = queryImage(obj.Location([40.69435,-73.98329], 0), obj.CameraPara(size=(800, 800), fov=100, heading=180, pitch=10))
+	query = queryImage(obj.Location([40.69435,-73.98329], 0), None)
 
-	pt_list = sampleLocation(query, 0.0008, 0.0001, obj.CameraPara(size=(800, 800), fov=100, heading=270, pitch=10))
-	# pt_list = sampleLocation(query, 0.0005, 0.0001, None)
+	pt_list = sampleLocation(query, 0.0005, 0.0001, obj.CameraPara(size=(800, 800), fov=100, heading=180, pitch=10)) # Load images from server
+	# pt_list = sampleLocation(query, 0.0008, 0.0001, None) # Use pre-loaded images
 
-	des_test, des_list = featureExtraction()
+	des_test, des_list = featureExtraction(False) # Extract features from images
+	# des_test, des_list = featureExtraction(True) # Read pre-extracted features from file
 
-	# Create list of #des in each image to indicate the  
-	index = [0]
-	for des in des_list: 
-		index.append(index[-1] + len(des))
-	index.pop(0)
-
+	# result: size(testset) x K
+	# dist: size(testset) x K
 	result, dist = featureRegistration(numpy.vstack(des_list), numpy.array(des_test))
 
-	votes = neighborVoting(pt_list, result, dist, index)
-	votes = numpy.zeros(len(pt_list))
-	votes = fh.readList(file_path + "vote.txt")
-	target = pt_list[votes.argmax(axis=0)]
-	print target.geo
+	votes, maxWeight = neighborVoting(pt_list, result, dist)
+
+	print maxWeight.geo
 	
+	# votes = fh.readList(file_path + "vote.txt")
 	plotMap(pt_list, votes)
 
 	
