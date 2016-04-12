@@ -24,7 +24,7 @@ def siftExtraction(img_in, img_out=None):
 		p = {'pt': kp.pt, 'size': kp.size, 'angle': kp.angle, 'response': kp.response, 'octave': kp.octave, 'id': kp.class_id}
 		point.append(p)
 
-	print 'SIFT extracted for %s' % fh.path_leaf(img_in)
+	# print 'SIFT extracted for %s' % fh.path_leaf(img_in)
 
 	return point, des
 

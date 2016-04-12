@@ -1,12 +1,13 @@
 # Image object
 class Image(object):
 	"""Image Object with location and other parameters"""
-	def __init__(self, location = None, cameraPara = None, filePath = None, feature = None):
+	def __init__(self, location = None, cameraPara = None, filePath = None, feature = None, weight = None):
 		super(Image, self).__init__()
 		self.location = location
 		self.cameraPara = cameraPara
 		self.filePath = filePath
-		self.feature = feature	
+		self.feature = feature
+		self.weight = weight
 
 # Sample Location with geo-coord and the layer it in
 class Location(object):
