@@ -74,13 +74,15 @@ def main(queryPath=None, queryDataset=True, extractFeature=True, FLANN=True):
 
 
 	if extractFeature:
-		_, des_list = ftr.patchExtraction(file_path + "image/dataset/", ".jpeg") # Extract features from images and write the features into file
-		_, des_test = ftr.siftExtraction(queryPath) # feature extraction for query
-		fh.writeList(des_list, file_path + "sift_set.txt") # Write extracted features into file
-		fh.writeList(des_test, file_path + "sift_test.txt") # Write extracted features into file
+		_, des_list = ftr.patchExtraction(file_path + "image/dataset/", "SIFT", True, ".jpeg") # Extract features from images and write the features into file
+		# _, des_test, _ = ftr.siftExtraction(queryPath) # feature extraction for query
+		_, des_test, _ = ftr.briefExtraction('SIFT', queryPath) # feature extraction for query
+
+		fh.writeList(des_list, file_path + "BSIFT_set.txt") # Write extracted features into file
+		fh.writeList(des_test, file_path + "BSIFT_test.txt") # Write extracted features into file
 	else:
-		des_list = fh.readList(file_path + "sift_set.txt") # Read pre-extracted features from file
-		des_test = fh.readList(file_path + "sift_test.txt") # Read pre-extracted features from file
+		des_list = fh.readList(file_path + "SURF_set.txt") # Read pre-extracted features from file
+		des_test = fh.readList(file_path + "SURF_test.txt") # Read pre-extracted features from file
 
 
 	if FLANN:
@@ -89,19 +91,22 @@ def main(queryPath=None, queryDataset=True, extractFeature=True, FLANN=True):
 		# dist: size(testset) x K
 		args = {'algorithm': 'kmeans', 'branching': 32, 'iterations': 12, 'checks': 10}
 		result, dist = rgstr.FLANN(numpy.vstack(des_list), numpy.array(des_test), 3, args)
-		fh.writeList(result, file_path + "result.txt") # Write extracted features into file
-		fh.writeList(dist, file_path + "dist.txt") # Write extracted features into file
+		fh.writeList(result, file_path + "BSIFT_result.txt") # Write extracted features into file
+		fh.writeList(dist, file_path + "BSIFT_dist.txt") # Write extracted features into file
 	else:
 		result = fh.readList(file_path + "result.txt") # Read pre-extracted features from file
 		dist = fh.readList(file_path + "dist.txt") # Read pre-extracted features from file
 
 	img_list, votes, maxWeight = neighborVoting(des_list, img_list, result, dist)
 
+	print (maxWeight.location.geo, maxWeight.cameraPara.heading, maxWeight.weight)
+
 	plotMap(img_list)
+	
 
 if __name__ == '__main__':
-	main()
-	# main(file_path + "image/test/test_2.jpeg", False, False, False)
+	# main()
+	main(queryPath=None, queryDataset=False, extractFeature=True, FLANN=True)
 	
 
 	
