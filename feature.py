@@ -4,15 +4,18 @@ import numpy as np
 import file_handler as fh
 import setting as st
 
-# Feature Extraction
-# kp - pt, size, andgle, response, octave
-# des - N x 128
-def siftExtraction(img_in, img_out=None):
-	img = cv2.imread(img_in)
-	gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def featureExtraction(detector, isBRIEF, img_in, img_out=None):
+	img = cv2.imread(img_in, 0)
 
-	sift = cv2.SIFT()
-	kps, des = sift.detectAndCompute(gray, None)	
+	if detector == 'SIFT':
+		kps, des = siftExtraction(img)
+	elif detector == 'SURF':
+		kps, des = surfExtraction(img)
+	else:
+		raise AttributeError('%s is not defined in featureExtraction()' % detector)
+
+	if isBRIEF:
+		kps, des = briefExtraction(kps, img)
 
 	# Extract the CV data structure as list of dictionary
 	points = []
@@ -25,13 +28,22 @@ def siftExtraction(img_in, img_out=None):
 		img = cv2.drawKeypoints(img, kps, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 		cv2.imwrite(img_out, img)
 
-	print 'SIFT extracted for %s' % fh.path_leaf(img_in)
+	print '%s extracted%sfor %s' % (detector, ' with BRIEF ' if isBRIEF else ' ', fh.path_leaf(img_in))
 
 	return kps, des, points
 
-def surfExtraction(img_in, img_out=None):
-	img = cv2.imread(img_in, 0)
-	
+
+# Feature Extraction
+# kp - pt, size, andgle, response, octave
+# des - N x 128
+def siftExtraction(img):
+	sift = cv2.SIFT(contrastThreshold=0.06)
+
+	kps, des = sift.detectAndCompute(img, None)		
+
+	return kps, des
+
+def surfExtraction(img):
 	# Create SURF object. You can specify params here or later.
 	# Here I set Hessian Threshold to 400
 	surf = cv2.SURF(400)
@@ -39,89 +51,32 @@ def surfExtraction(img_in, img_out=None):
 	# Find keypoints and descriptors directly
  	kps, des = surf.detectAndCompute(img, None)	
 
-	# Extract the CV data structure as list of dictionary
-	points = []
-	for kp in kps:
-		p = {'pt': kp.pt, 'size': kp.size, 'angle': kp.angle, 'response': kp.response, 'octave': kp.octave, 'id': kp.class_id}
-		points.append(p)
+	return kps, des
 
-	# Draw key points if output path specified
-	if img_out:
-		img = cv2.drawKeypoints(cv2.imread(img_in), kps, None, (255, 0, 0), 4)
-		cv2.imwrite(img_out, img)
+def briefExtraction(kps, img):	
+	# Initiate BRIEF extractor
+	brief = cv2.DescriptorExtractor_create("BRIEF")
 
-	print 'SURF extracted for %s' % fh.path_leaf(img_in)
+	# compute the descriptors with BRIEF
+	kps, des = brief.compute(img, kps)
 
-	return kps, des, points
-
-def briefExtraction(feature, img_in, img_out=None):
-	if feature is None:
-		print 'Please specify a feature descriptor for BRIEF'
-
-	else:
-		img = cv2.imread(img_in, 0)
-
-		if feature == 'SIFT':
-			kps, des, points = siftExtraction(img_in, img_out)
-		elif feature == 'SURF':
-			kps, des, points = surfExtraction(img_in, img_out)
-		else:
-			print 'Feature not defined in BRIEF'
-
-		# Initiate BRIEF extractor
-		brief = cv2.DescriptorExtractor_create("BRIEF")
-
-		# compute the descriptors with BRIEF
-		kps_brief, des_brief = brief.compute(img, kps)
-
-		# Extract the CV data structure as list of dictionary
-		points = []
-		for kp in kps_brief:
-			p = {'pt': kp.pt, 'size': kp.size, 'angle': kp.angle, 'response': kp.response, 'octave': kp.octave, 'id': kp.class_id}
-			points.append(p)
-
-		# Draw key points if output path specified
-		if img_out:
-			img = cv2.drawKeypoints(cv2.imread(img_in), kps, None, (255, 0, 0), 4)
-			cv2.imwrite(img_out, img)
-
-		print 'BRIEF extracted for %s' % fh.path_leaf(img_in)
-
-		return kps_brief, des_brief, points
+	return kps, des
 
 # Feature Extraction of dataset
-def patchExtraction(data_path, feature, brief=False, file_ext=None):
-	if feature is None:
-		print 'Please specify a feature descriptor for BRIEF'
+def patchExtraction(data_path, detector, isBRIEF=False, file_ext=None):
+	print "Extracting patch %s detectors..." % detector
+
+	kp_list = []
+	des_list = []
+
+	f_list = fh.listFiles(data_path, file_ext)
 	
-	else:
-		kp_list = []
-		des_list = []
+	for f in f_list:
+		kp, des, points = featureExtraction(detector, isBRIEF, f)
+		kp_list.append(kp)
+		des_list.append(des)			
 
-		f_list = fh.listFiles(data_path, file_ext)
-
-		print "Extracting patch %s features..." % feature
-		
-		# TODO: Dirty Code 
-		if brief:
-			for f in f_list:
-				kp, des, points = briefExtraction(feature, f)
-				kp_list.append(kp)
-				des_list.append(des)
-		elif feature == 'SIFT':
-			for f in f_list:
-				kp, des, points = siftExtraction(f)
-				kp_list.append(kp)
-				des_list.append(des)
-		elif feature == 'SURF':
-			for f in f_list:
-				kp, des, points = surfExtraction(f)
-				kp_list.append(kp)
-				des_list.append(des)
-		else:
-			print 'Feature not defined in patchExtraction()'					
-
-		return kp_list, des_list
+	return kp_list, des_list
 
 
 if __name__ == '__main__':
@@ -131,11 +86,4 @@ if __name__ == '__main__':
 	surf = st.path + "image/test/test_surf.jpeg"
 	brief = st.path + "image/test/test_brief.jpeg"
 
-	kps, des, points = siftExtraction(img, sift)
-
-	kps2, des2, points2 = surfExtraction(img, surf)
-
-	kps3, des3, points3 = briefExtraction('SURF', img, brief)
-
-
-	# patchExtraction(dataset, "jpeg")
+	featureExtraction('SIFT', False, img, sift)

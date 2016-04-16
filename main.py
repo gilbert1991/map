@@ -60,7 +60,7 @@ def plotMap(img_list):
 	geo_list = [img.location.geo for img in img_list]
 	mt.plot3D([geo[0] for geo in geo_list], [geo[1] for geo in geo_list], [img.weight for img in img_list])
 
-def main(queryPath=None, queryDataset=True, extractFeature=True, FLANN=True):
+def main(queryPath, queryDataset, extractFeature, FLANN, detector, isBRIEF):
 	if queryPath == None:
 		query = initQuery(obj.Location([40.69435,-73.98329], 0), obj.CameraPara(size=(800, 800), fov=120, heading=45, pitch=10))
 		queryPath = query.filePath
@@ -68,34 +68,30 @@ def main(queryPath=None, queryDataset=True, extractFeature=True, FLANN=True):
 	if queryDataset:
 		pt_list = mt.hexagon(query.location.geo, 0.0005, 0.0001) # Generate sample point list
 		hh.buildDataset(file_path + "image/dataset/", pt_list, obj.CameraPara(size=(800, 800), fov=120, heading=[0, 90, 180, 270], pitch=10)) # Download dataset images
-
 	
 	img_list =  fh.extractImageParas(file_path + "image/dataset/", ".jpeg")
 
 
+	_, des_test, _ = ftr.featureExtraction(detector, isBRIEF, queryPath) # feature extraction for query
+
 	if extractFeature:
-		_, des_list = ftr.patchExtraction(file_path + "image/dataset/", "SIFT", True, ".jpeg") # Extract features from images and write the features into file
-		# _, des_test, _ = ftr.siftExtraction(queryPath) # feature extraction for query
-		_, des_test, _ = ftr.briefExtraction('SIFT', queryPath) # feature extraction for query
-
-		fh.writeList(des_list, file_path + "BSIFT_set.txt") # Write extracted features into file
-		fh.writeList(des_test, file_path + "BSIFT_test.txt") # Write extracted features into file
+		_, des_list = ftr.patchExtraction(file_path + "image/dataset/", detector, isBRIEF, ".jpeg") # Extract features from images and write the features into file
+		fh.writeList(des_list, file_path + "%s%s_set.txt" % ('B' if isBRIEF else '', detector)) # Write extracted features into file
 	else:
-		des_list = fh.readList(file_path + "SURF_set.txt") # Read pre-extracted features from file
-		des_test = fh.readList(file_path + "SURF_test.txt") # Read pre-extracted features from file
+		des_list = fh.readList(file_path + "%s%s_set.txt" % ('B' if isBRIEF else '', detector)) # Read pre-extracted features from file
 
 
-	if FLANN:
-		# Feature Registration
-		# result: size(testset) x K
-		# dist: size(testset) x K
+	# Feature Registration
+	# result: size(testset) x K
+	# dist: size(testset) x K
+	if FLANN:		
 		args = {'algorithm': 'kmeans', 'branching': 32, 'iterations': 12, 'checks': 10}
 		result, dist = rgstr.FLANN(numpy.vstack(des_list), numpy.array(des_test), 3, args)
-		fh.writeList(result, file_path + "BSIFT_result.txt") # Write extracted features into file
-		fh.writeList(dist, file_path + "BSIFT_dist.txt") # Write extracted features into file
+		fh.writeList(result, file_path + "%s%s_result.txt" % ('B' if isBRIEF else '', detector)) # Write extracted features into file
+		fh.writeList(dist, file_path + "%s%s_dist.txt" % ('B' if isBRIEF else '', detector)) # Write extracted features into file
 	else:
-		result = fh.readList(file_path + "result.txt") # Read pre-extracted features from file
-		dist = fh.readList(file_path + "dist.txt") # Read pre-extracted features from file
+		result = fh.readList(file_path + "%s%s_result.txt" % ('B' if isBRIEF else '', detector)) # Read pre-extracted features from file
+		dist = fh.readList(file_path + "%s%s_dist.txt" % ('B' if isBRIEF else '', detector)) # Read pre-extracted features from file
 
 	img_list, votes, maxWeight = neighborVoting(des_list, img_list, result, dist)
 
@@ -106,7 +102,7 @@ def main(queryPath=None, queryDataset=True, extractFeature=True, FLANN=True):
 
 if __name__ == '__main__':
 	# main()
-	main(queryPath=None, queryDataset=False, extractFeature=True, FLANN=True)
+	main(queryPath=file_path + "image/test/test_3.jpeg", queryDataset=False, extractFeature=False, FLANN=True, detector='SURF', isBRIEF=True)
 	
 
 	
