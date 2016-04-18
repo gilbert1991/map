@@ -72,6 +72,28 @@ def hexagon(origin = (0, 0), radius = 20, interval = 1):
 
 	return point_list
 
+def plotMultiWeights(img_list, headings):
+	size = len(headings)
+
+	fig = plt.figure()
+
+	cmhot = plt.get_cmap("hot")
+
+	for i in range(size):
+		heading = headings[i]
+
+		sub_list = [img for img in img_list if img.cameraPara.heading == heading]
+		geo_list = [img.location.geo for img in sub_list]
+		x = [geo[0] for geo in geo_list]
+		y = [geo[1] for geo in geo_list]
+		z = [img.weight for img in sub_list]
+
+		ax = fig.add_subplot(1, size, i+1, projection='3d')
+		ax.scatter(x, y, z, s=50, c=np.abs(z), cmap=cmhot)
+		ax.set_title('Heading %s' % heading)
+
+	plt.show()
+
 def plot3D(x, y, z):
 	# fig = plt.figure()
 	# ax = fig.add_subplot(111, projection='3d')
@@ -89,19 +111,14 @@ def plot3D(x, y, z):
 	plt.show()
 
 if __name__ == '__main__':
-	# ori = (40.69465, -73.98327)
-	# dst = (40.69465, -73.98337)
-	# print(geo_distance(ori, dst, 'great_circle'))
+	img1 = obj.Image(location = obj.Location([40.69435,-73.98329], 0), 
+		cameraPara = obj.CameraPara(size=(800, 800), fov=120, heading=0, pitch=10), filePath = None, feature = None, weight = 1)
+	img2 = obj.Image(location = obj.Location([40.69435,-73.98329], 0), 
+		cameraPara = obj.CameraPara(size=(800, 800), fov=120, heading=90, pitch=10), filePath = None, feature = None, weight = 2)
+	img3 = obj.Image(location = obj.Location([40.69435,-73.98329], 0), 
+		cameraPara = obj.CameraPara(size=(800, 800), fov=120, heading=180, pitch=10), filePath = None, feature = None, weight = 3)
+	img4 = obj.Image(location = obj.Location([40.69435,-73.98329], 0), 
+		cameraPara = obj.CameraPara(size=(800, 800), fov=120, heading=270, pitch=10), filePath = None, feature = None, weight = 2)
 
-	
-
-	plot3D([1, 3, 5, 2], [3, 6, 9, 1], [9,4,1,5])
-	# point_list = hexagon((0, 0), 4, 1.1)
-
-	# for pt in point_list:
-	# 	plt.plot(pt.geo[0], pt.geo[1], 'ro')
-
-	# plt.show()
-
-	# print len(point_list)
+	plotMultiWeights([img1, img2, img3, img4], [0, 90, 180, 270])
 

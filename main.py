@@ -62,7 +62,7 @@ def plotMap(img_list):
 
 def main(queryPath, queryDataset, extractFeature, FLANN, detector, isBRIEF):
 	if queryPath == None:
-		query = initQuery(obj.Location([40.69435,-73.98329], 0), obj.CameraPara(size=(800, 800), fov=120, heading=45, pitch=10))
+		query = initQuery(obj.Location([40.693900, -73.983377], 0), obj.CameraPara(size=(800, 800), fov=120, heading=225, pitch=10))
 		queryPath = query.filePath
 
 	if queryDataset:
@@ -97,12 +97,13 @@ def main(queryPath, queryDataset, extractFeature, FLANN, detector, isBRIEF):
 
 	print (maxWeight.location.geo, maxWeight.cameraPara.heading, maxWeight.weight)
 
-	plotMap(img_list)
+	# plotMap(img_list)
+	mt.plotMultiWeights(img_list, [0, 90, 180, 270])
 	
 
 if __name__ == '__main__':
 	# main()
-	main(queryPath=file_path + "image/test/test_3.jpeg", queryDataset=False, extractFeature=False, FLANN=True, detector='SURF', isBRIEF=True)
+	main(queryPath=None, queryDataset=False, extractFeature=False, FLANN=True, detector='SURF', isBRIEF=True)
 	
 
 	
