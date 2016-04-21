@@ -1,6 +1,4 @@
 import geopy.distance as gpy
-import math
-
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
@@ -8,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import objects as obj
+import http_handler as hh
 
 # Convert geo coords (lat, lng) diff to distance in meters
 # lat: 0.0001 ~= 11.1m, lng 0.0001 ~= 8.5m
@@ -20,6 +19,56 @@ def geoDistance(ori, dst, method='vincenty'):
 		print('Error with geo_distance')
 
 	return distance	
+
+def snapRoadNetwork(origin, radius, interval):
+	network = []
+
+	vertices = sliceCircle(origin, radius * 2, 8)
+
+	for idx in range(0, 8):
+		v1 = vertices[idx]
+		v2 = vertices[(idx+2) % 8]
+		road = hh.parseJsonRoad(hh.snapToRoad([v1, v2]))
+
+		# for idx2 in range(len(road) - 1):
+		# 	p1 = road[idx2]
+		# 	p2 = road[idx2+1]
+
+		# 	if np.sqrt((p2[1]-p1[1])**2+(p2[0]-p1[0])**2) > radius:
+
+
+		# 	network.extend(subRoad)
+		network.extend(road)
+	return network
+
+# Evenly slice a circle into sectors
+def sliceCircle(origin, radius, sectors):
+	sector_width = 360 / sectors
+
+	vertices = []
+
+	for x in range(0, sectors):
+		vertex = (origin[0] + np.sin(np.radians(x * sector_width)) * radius, 
+					origin[1] + np.cos(np.radians(x * sector_width)) * radius)
+		vertices.append(vertex)
+
+	return vertices
+
+# interpolate points if the interval is too large
+def interpolate(path, interval):
+	size = len(path)
+	for idx in range(size - 1):
+		p1 = path[idx]
+		p2 = path[idx+1]
+
+		# interpolate if distance between consecutive points less than 2*threshold
+		if np.sqrt((p2[1]-p1[1])**2+(p2[0]-p1[0])**2) > interval*2:
+			path.append( ( (p2[0]+p1[0])/2, (p2[1]+p1[1])/2 ) )
+
+	# in place sorting
+	path.sort(key=lambda tup: tup[0])
+
+	return path
 
 # Sample Location Generation
 def hexagon(origin = (0, 0), radius = 20, interval = 1):
@@ -110,15 +159,33 @@ def plot3D(x, y, z):
 	# ax.scatter(x, y, z, c=z)
 	plt.show()
 
-if __name__ == '__main__':
-	img1 = obj.Image(location = obj.Location([40.69435,-73.98329], 0), 
-		cameraPara = obj.CameraPara(size=(800, 800), fov=120, heading=0, pitch=10), filePath = None, feature = None, weight = 1)
-	img2 = obj.Image(location = obj.Location([40.69435,-73.98329], 0), 
-		cameraPara = obj.CameraPara(size=(800, 800), fov=120, heading=90, pitch=10), filePath = None, feature = None, weight = 2)
-	img3 = obj.Image(location = obj.Location([40.69435,-73.98329], 0), 
-		cameraPara = obj.CameraPara(size=(800, 800), fov=120, heading=180, pitch=10), filePath = None, feature = None, weight = 3)
-	img4 = obj.Image(location = obj.Location([40.69435,-73.98329], 0), 
-		cameraPara = obj.CameraPara(size=(800, 800), fov=120, heading=270, pitch=10), filePath = None, feature = None, weight = 2)
+def plotPath(path):
+	x = []
+	y = []
+	for p in path:
+		x.append(p[1])
+		y.append(p[0])		
 
-	plotMultiWeights([img1, img2, img3, img4], [0, 90, 180, 270])
+	fig, ax = plt.subplots()
+
+	marker_style = dict(color='cornflowerblue', linestyle=':', marker='o', 
+		markersize=8, markerfacecoloralt='gray')
+
+	# Plot all fill styles
+	ax.plot(x, y, fillstyle='full', **marker_style)
+
+	plt.show()
+
+
+if __name__ == '__main__':
+	# path = [(-35.27801,149.12958),(-35.28032,149.12907),(-35.28099,149.12929),(-35.28144,149.12984),(-35.28194,149.13003),(-35.28282,149.12956)]
+	# path = sliceCircle((0,0), 10, 8)
+	# plotPath(path)
+	# network = snapRoadNetwork((40.693903, -73.983434), 0.0005, 0.00005)
+	# plotPath(network)
+	path = [(0.0, 0.0), (3.0, 4.0)]
+	path = interpolate(path, 2)
+	print path
+
+
 

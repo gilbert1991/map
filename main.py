@@ -19,8 +19,8 @@ def initQuery(location, cameraPara):
 
 	# Load query image
 	if cameraPara != None:
-		encoded_args = hh.encodeArgs(location.geo, cameraPara.size, cameraPara.fov, cameraPara.heading, cameraPara.pitch);
-		fh.img2File(hh.getImg(encoded_args), query.filePath)
+		encoded_args = hh.encodeStreetArgs(location.geo, cameraPara.size, cameraPara.fov, cameraPara.heading, cameraPara.pitch);
+		fh.img2File(hh.getStreetView(encoded_args), query.filePath)
 
 	return query
 
@@ -46,8 +46,8 @@ def neighborVoting(des_list, img_list, result, dist):
 	# assign final vote value to img
 	for v, img in zip(votes, img_list):
 		img.weight = v
-		if v > 0:
-			print "%s %d has vote %d" % (img.location.geo, img.cameraPara.heading, v)
+		# if v > 0:
+		# 	print "%s %d has vote %d" % (img.location.geo, img.cameraPara.heading, v)
 
 	fh.writeList(votes, file_path + "vote.txt")
 
