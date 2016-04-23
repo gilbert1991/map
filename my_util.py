@@ -28,17 +28,19 @@ def snapRoadNetwork(origin, radius, interval):
 	for idx in range(0, 8):
 		v1 = vertices[idx]
 		v2 = vertices[(idx+2) % 8]
-		road = hh.parseJsonRoad(hh.snapToRoad([v1, v2]))
 
-		# for idx2 in range(len(road) - 1):
-		# 	p1 = road[idx2]
-		# 	p2 = road[idx2+1]
+		path = [v1, v2]
+		# path = interpolate([v1, v2], interval)
+		road = hh.parseJsonRoad(hh.snapToRoad(path))
+		road.extend(hh.parseJsonRoad(hh.snapToRoad(interpolate(road, interval))))
+		# road = hh.parseJsonRoad(hh.snapToRoad(interpolate(r2, interval)))
+		# road = hh.parseJsonRoad(hh.snapToRoad(road))
+		network.append(road)
 
-		# 	if np.sqrt((p2[1]-p1[1])**2+(p2[0]-p1[0])**2) > radius:
+		# if road:
+		# 	reverse_road = hh.parseJsonRoad(hh.snapToRoad(list(reversed(road))))
+		# 	network.append(reverse_road)
 
-
-		# 	network.extend(subRoad)
-		network.extend(road)
 	return network
 
 # Evenly slice a circle into sectors
@@ -61,9 +63,15 @@ def interpolate(path, interval):
 		p1 = path[idx]
 		p2 = path[idx+1]
 
-		# interpolate if distance between consecutive points less than 2*threshold
-		if np.sqrt((p2[1]-p1[1])**2+(p2[0]-p1[0])**2) > interval*2:
-			path.append( ( (p2[0]+p1[0])/2, (p2[1]+p1[1])/2 ) )
+		# number of interpolating points needed
+		interpolate_points = np.floor( np.sqrt((p2[1]-p1[1])**2+(p2[0]-p1[0])**2) / interval ) - 1
+
+		if interpolate_points > 0:
+			step0 = (p2[0]-p1[0]) / (interpolate_points + 1)
+			step1 = (p2[1]-p1[1]) / (interpolate_points + 1)
+
+			for idx in range(1, int(interpolate_points+1)):
+				path.append((p1[0]+idx*step0, p1[1]+idx*step1))
 
 	# in place sorting
 	path.sort(key=lambda tup: tup[0])
@@ -159,33 +167,30 @@ def plot3D(x, y, z):
 	# ax.scatter(x, y, z, c=z)
 	plt.show()
 
-def plotPath(path):
-	x = []
-	y = []
-	for p in path:
-		x.append(p[1])
-		y.append(p[0])		
+def plotNetwork(network):
+	marker_style = dict(color='cornflowerblue', linestyle=':', marker='o', 
+			markersize=8, markerfacecoloralt='gray')
 
 	fig, ax = plt.subplots()
 
-	marker_style = dict(color='cornflowerblue', linestyle=':', marker='o', 
-		markersize=8, markerfacecoloralt='gray')
+	for path in network:
+		x = []
+		y = []
+		for p in path:
+			x.append(p[1])
+			y.append(p[0])		
 
-	# Plot all fill styles
-	ax.plot(x, y, fillstyle='full', **marker_style)
+		# Plot all fill styles
+		ax.plot(x, y, fillstyle='full', **marker_style)
 
 	plt.show()
 
 
 if __name__ == '__main__':
-	# path = [(-35.27801,149.12958),(-35.28032,149.12907),(-35.28099,149.12929),(-35.28144,149.12984),(-35.28194,149.13003),(-35.28282,149.12956)]
-	# path = sliceCircle((0,0), 10, 8)
-	# plotPath(path)
-	# network = snapRoadNetwork((40.693903, -73.983434), 0.0005, 0.00005)
-	# plotPath(network)
-	path = [(0.0, 0.0), (3.0, 4.0)]
-	path = interpolate(path, 2)
-	print path
+	network = snapRoadNetwork((40.693903, -73.983434), 0.0005, 0.0001)
+	# network = snapRoadNetwork((40.719165, -73.996569), 0.0005, 0.0001)
+	plotNetwork(network)
+
 
 
 

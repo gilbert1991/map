@@ -12,8 +12,6 @@ snap_road_key = "AIzaSyBYkXXULu2MoMzpS48_DPQ1u2tt8UNREsg"
 
 # Snap to road from list of points
 def snapToRoad(path):
-	print 'Snap to road %s' % path
-
 	encoded_args = { 
 					'path': "|".join("%f,%f" % geo for geo in path),
 					'interpolate': 'true',
