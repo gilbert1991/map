@@ -4,6 +4,7 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 import objects as obj
 import http_handler as hh
@@ -23,25 +24,54 @@ def geoDistance(ori, dst, method='vincenty'):
 def snapRoadNetwork(origin, radius, interval):
 	network = []
 
-	vertices = sliceCircle(origin, radius * 2, 8)
+	# Slice a circle into 8 sectors with 2*radius
+	sector = 8
+	vertices = sliceCircle(origin, radius * 2, sector)
 
-	for idx in range(0, 8):
+	# Create virtual paths for road snapping
+	for idx in range(0, sector):
 		v1 = vertices[idx]
-		v2 = vertices[(idx+2) % 8]
+		v2 = vertices[(idx+2) % sector]
 
 		path = [v1, v2]
-		# path = interpolate([v1, v2], interval)
-		road = hh.parseJsonRoad(hh.snapToRoad(path))
-		road.extend(hh.parseJsonRoad(hh.snapToRoad(interpolate(road, interval))))
-		# road = hh.parseJsonRoad(hh.snapToRoad(interpolate(r2, interval)))
-		# road = hh.parseJsonRoad(hh.snapToRoad(road))
-		network.append(road)
 
-		# if road:
-		# 	reverse_road = hh.parseJsonRoad(hh.snapToRoad(list(reversed(road))))
-		# 	network.append(reverse_road)
+		# snap path to road 
+		road = hh.parseJsonRoad(hh.snapToRoad(path))
+		# interpolate the road and snap again to get optimized sample locations
+		road = hh.parseJsonRoad(hh.snapToRoad(interpolate(road, interval)))		
+		filterPath(road, interval)		
+		
+		#reverse the query to better cover the area
+		reverse_road = hh.parseJsonRoad(hh.snapToRoad(list(reversed(road)))) if road else []		
+		reverse_road = hh.parseJsonRoad(hh.snapToRoad(interpolate(reverse_road, interval)))
+		filterPath(reverse_road, interval)
+		
+		# Exclude points beyond radius
+		road = [pt for pt in road if np.sqrt((pt[1]-origin[1])**2+(pt[0]-origin[0])**2) < radius]
+		reverse_road = [pt for pt in reverse_road if np.sqrt((pt[1]-origin[1])**2+(pt[0]-origin[0])**2) < radius]
+
+		# Add path to sample network
+		network.append(road)
+		network.append(reverse_road)
+
+	# places = [pt for road in network for pt in road]
+	# for idx in list(reversed(range(len(places)))):
+	# 	for idx2 in list(reversed(range(len(places), idx+1))):
+	# 		if np.sqrt((places[idx][1]-places[idx2][1])**2+(places[idx][0]-places[idx2][0])**2) < interval:
+	# 			del places[idx2]
+
+	# network = places
+	# network.append([])
 
 	return network
+
+def filterPath(path, interval):
+	# Filter the samples with density 1/interval
+	for i in list(reversed(range(len(path)))):
+		if np.sqrt((path[i-1][1]-path[i][1])**2+(path[i-1][0]-path[i][0])**2) < interval:
+			del path[i-1]
+
+	return path
 
 # Evenly slice a circle into sectors
 def sliceCircle(origin, radius, sectors):
@@ -59,31 +89,36 @@ def sliceCircle(origin, radius, sectors):
 # interpolate points if the interval is too large
 def interpolate(path, interval):
 	size = len(path)
+	result_path = []
+
 	for idx in range(size - 1):
 		p1 = path[idx]
 		p2 = path[idx+1]
+
+		result_path.append(p1)
 
 		# number of interpolating points needed
 		interpolate_points = np.floor( np.sqrt((p2[1]-p1[1])**2+(p2[0]-p1[0])**2) / interval ) - 1
 
 		if interpolate_points > 0:
+			# calculate the steps of lat & lng
 			step0 = (p2[0]-p1[0]) / (interpolate_points + 1)
 			step1 = (p2[1]-p1[1]) / (interpolate_points + 1)
 
+			# insert the inter points
 			for idx in range(1, int(interpolate_points+1)):
-				path.append((p1[0]+idx*step0, p1[1]+idx*step1))
+				result_path.append((p1[0]+idx*step0, p1[1]+idx*step1))
 
-	# in place sorting
-	path.sort(key=lambda tup: tup[0])
+		result_path.append(p2)
 
-	return path
+	return result_path
 
 # Sample Location Generation
 def hexagon(origin = (0, 0), radius = 20, interval = 1):
 
 	print 'Generating hexagon points...'
 	# init point list with origin at layer 0
-	point_list = [obj.Location((origin[0], origin[1]), layer = 0)] 
+	point_list = [(origin[0], origin[1])]
 
 	# number of layers to cover the area
 	# layer is the position of a hexagon
@@ -102,12 +137,12 @@ def hexagon(origin = (0, 0), radius = 20, interval = 1):
 		# 4 o---o---o 1
 		#    \ / \ /
 		#   5 o---o 6
-		layer_list.append(obj.Location((origin[0] + unit_length, origin[1]), lyr)) # 1
-		layer_list.append(obj.Location((origin[0] + unit_length / 2, origin[1] + height_length), lyr)) # 2
-		layer_list.append(obj.Location((origin[0] - unit_length / 2, origin[1] + height_length), lyr)) # 3
-		layer_list.append(obj.Location((origin[0] - unit_length, origin[1]), lyr)) # 4
-		layer_list.append(obj.Location((origin[0] - unit_length / 2, origin[1] - height_length), lyr)) # 5 
-		layer_list.append(obj.Location((origin[0] + unit_length / 2, origin[1] - height_length), lyr)) # 6
+		layer_list.append((origin[0] + unit_length, origin[1])) # 1
+		layer_list.append((origin[0] + unit_length / 2, origin[1] + height_length)) # 2
+		layer_list.append((origin[0] - unit_length / 2, origin[1] + height_length)) # 3
+		layer_list.append((origin[0] - unit_length, origin[1])) # 4
+		layer_list.append((origin[0] - unit_length / 2, origin[1] - height_length)) # 5 
+		layer_list.append((origin[0] + unit_length / 2, origin[1] - height_length)) # 6
 
 		# number of points on an edge exclude two vertices
 		no_point_on_edge = lyr - 1 
@@ -117,13 +152,13 @@ def hexagon(origin = (0, 0), radius = 20, interval = 1):
 			v_start = layer_list[edge]
 			v_end = layer_list[(edge + 1) % 6]
 
-			lat_diff = (v_start.geo[0] - v_end.geo[0]) / (no_point_on_edge + 1)
-			lng_diff = (v_start.geo[1] - v_end.geo[1]) / (no_point_on_edge + 1)
+			lat_diff = (v_start[0] - v_end[0]) / (no_point_on_edge + 1)
+			lng_diff = (v_start[1] - v_end[1]) / (no_point_on_edge + 1)
 
  			point_list.append(v_start)
 
 			for pt in range(1, no_point_on_edge + 1):
-				point_list.append(obj.Location((v_start.geo[0] - pt * lat_diff, v_start.geo[1] - pt * lng_diff), lyr))
+				point_list.append((v_start[0] - pt * lat_diff, v_start[1] - pt * lng_diff))
 
 	print '%d points and %d layers generated' % (len(point_list), no_layer)
 
@@ -188,8 +223,15 @@ def plotNetwork(network):
 
 if __name__ == '__main__':
 	network = snapRoadNetwork((40.693903, -73.983434), 0.0005, 0.0001)
-	# network = snapRoadNetwork((40.719165, -73.996569), 0.0005, 0.0001)
+	print sum([len(path) for path in network])
 	plotNetwork(network)
+
+
+	# path = [(40.693902999999999, -73.982433999999998), (40.694902999999996, -73.983434000000003)]
+	# # path = interpolate([v1, v2], interval)
+	# road = hh.parseJsonRoad(hh.snapToRoad(path))
+	# print road
+	# print interpolate(road, 0.0001)
 
 
 

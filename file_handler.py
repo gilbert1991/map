@@ -24,6 +24,12 @@ def listFiles(data_path, file_ext):
 
 	return f_list
 
+# Delete all *.ext files in a directory
+def cleanDir(data_path, file_ext):
+	f_list = listFiles(data_path, file_ext)
+	for f in f_list:
+		os.remove(f)
+
 # Write items in a list to file
 def writeList(my_list, file_path):
 	with open(file_path, 'wb') as f:
@@ -46,18 +52,21 @@ def path_leaf(path):
     return tail or nt.basename(head)
 
 # Extract a list of image paras from a directory
-def extractImageParas(file_path, file_ext):
+def extractImageParas(file_path, file_ext, noParas):
 	image_list = []
 
 	f_list = listFiles(file_path, file_ext or '.jpeg')
 
+	# Extract file parameters one by one
 	for f in f_list:
 		file_name = path_leaf(f)
+		# Split file name with default "_" to get a list of parameters		
 		p = os.path.splitext(file_name)[0].split('_') # get paras from file name
 
-		if len(p) == 8:
+		# All file names should contain parameters in the same format
+		if len(p) == noParas:
 			p = map(float, p)
-			image = obj.Image(obj.Location([p[0], p[1]], p[2]), obj.CameraPara(size = (p[3], p[4]), fov = p[5], heading = p[6], pitch = p[7]), filePath = f)
+			image = obj.Image(obj.Location([p[0], p[1]], 0), obj.CameraPara(size = (p[2], p[3]), fov = p[4], heading = p[5], pitch = p[6]), filePath = f)
 			image_list.append(image)
 		else:
 			print "Extract image parameters from %s failed" % file_name
@@ -66,4 +75,4 @@ def extractImageParas(file_path, file_ext):
 
 
 if __name__ == '__main__':
-	img_list =  extractImageParas(st.path + "image/dataset/", ".jpeg")
+	cleanDir("/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/image/dataset/", ".jpeg")

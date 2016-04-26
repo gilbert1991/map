@@ -62,14 +62,17 @@ def plotMap(img_list):
 
 def main(queryPath, queryDataset, extractFeature, FLANN, detector, isBRIEF):
 	if queryPath == None:
-		query = initQuery(obj.Location([40.693900, -73.983377], 0), obj.CameraPara(size=(800, 800), fov=120, heading=225, pitch=10))
+		query = initQuery(obj.Location([40.693903, -73.983434], 0), obj.CameraPara(size=(800, 800), fov=120, heading=0, pitch=10))
 		queryPath = query.filePath
 
 	if queryDataset:
-		pt_list = mt.hexagon(query.location.geo, 0.0005, 0.0001) # Generate sample point list
+		# pt_list = mt.hexagon(query.location.geo, 0.0002, 0.0001) # Generate sample point list
+		network = mt.snapRoadNetwork(query.location.geo, 0.0005, 0.0001)
+		# mt.plotNetwork(network)
+		pt_list = [pt for path in network for pt in path]
 		hh.buildDataset(file_path + "image/dataset/", pt_list, obj.CameraPara(size=(800, 800), fov=120, heading=[0, 90, 180, 270], pitch=10)) # Download dataset images
 	
-	img_list =  fh.extractImageParas(file_path + "image/dataset/", ".jpeg")
+	img_list =  fh.extractImageParas(file_path + "image/dataset/", ".jpeg", 7)
 
 
 	_, des_test, _ = ftr.featureExtraction(detector, isBRIEF, queryPath) # feature extraction for query
@@ -103,7 +106,9 @@ def main(queryPath, queryDataset, extractFeature, FLANN, detector, isBRIEF):
 
 if __name__ == '__main__':
 	# main()
-	main(queryPath=None, queryDataset=False, extractFeature=False, FLANN=True, detector='SURF', isBRIEF=True)
+	fh.cleanDir("/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/image/dataset/", ".jpeg")
+	main(queryPath=None, queryDataset=True, extractFeature=True, FLANN=True, detector='SIFT', isBRIEF=False)
+	# main(queryPath=None, queryDataset=False, extractFeature=False, FLANN=False, detector='SIFT', isBRIEF=False)
 	
 
 	

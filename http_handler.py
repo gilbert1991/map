@@ -55,11 +55,11 @@ def buildDataset(dataset_path, point_list, cameraPara = None):
 		for heading in cameraPara.heading:
 
 			# Format file name with parameters
-			file_name = '%s%f_%f_%d_%d_%d_%d_%d_%d.jpeg' % (dataset_path, pt.geo[0], pt.geo[1], 
-				pt.layer, cameraPara.size[0], cameraPara.size[1], cameraPara.fov, heading, cameraPara.pitch)
+			file_name = '%s%f_%f_%d_%d_%d_%d_%d.jpeg' % (dataset_path, pt[0], pt[1], 
+				cameraPara.size[0], cameraPara.size[1], cameraPara.fov, heading, cameraPara.pitch)
 
 			# Encode http post parameters
-			encoded_args = encodeStreetArgs(pt.geo, cameraPara.size, cameraPara.fov, heading, cameraPara.pitch)
+			encoded_args = encodeStreetArgs(pt, cameraPara.size, cameraPara.fov, heading, cameraPara.pitch)
 
 			# Http Request and Save file as file_name
 			fh.img2File(getStreetView(encoded_args), file_name)
@@ -71,7 +71,7 @@ def buildDataset(dataset_path, point_list, cameraPara = None):
 def parseJsonRoad(road):
 	locations = []
 
-	if 'snappedPoints' in road:
+	if road and 'snappedPoints' in road:
 		places = road['snappedPoints']		
 		for p in places:		
 			locations.append((p['location']['latitude'], p['location']['longitude']))
