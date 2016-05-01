@@ -5,23 +5,13 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import sys
 
 import objects as obj
 import http_handler as hh
 
-# Convert geo coords (lat, lng) diff to distance in meters
-# lat: 0.0001 ~= 11.1m, lng 0.0001 ~= 8.5m
-def geoDistance(ori, dst, method='vincenty'):
-	if method == 'vincenty':
-		distance = gpy.vincenty(ori, dst).meters
-	elif method == 'great_circle':
-		distance = gpy.great_circle(ori, dst).meters
-	else:
-		print('Error with geo_distance')
-
-	return distance	
-
 def snapRoadNetwork(origin, radius, interval):
+	print 'Snap road networks at (%f, %f) with radius %f' % (origin[0], origin[1], radius)
 	network = []
 
 	# Slice a circle into 8 sectors with 2*radius
@@ -113,64 +103,14 @@ def interpolate(path, interval):
 
 	return result_path
 
-# Sample Location Generation
-def hexagon(origin = (0, 0), radius = 20, interval = 1):
-
-	print 'Generating hexagon points...'
-	# init point list with origin at layer 0
-	point_list = [(origin[0], origin[1])]
-
-	# number of layers to cover the area
-	# layer is the position of a hexagon
-	no_layer = int(math.ceil(radius / interval)) 
-
-	# Generate points layer by layer 
-	for lyr in range(1, no_layer + 1):
-		unit_length = interval * lyr
-		height_length = unit_length * math.sqrt(3) / 2
-
-		layer_list = []
-
-		# Create 6 vertices
-		#   3 o---o 2
-		#    / \ / \
-		# 4 o---o---o 1
-		#    \ / \ /
-		#   5 o---o 6
-		layer_list.append((origin[0] + unit_length, origin[1])) # 1
-		layer_list.append((origin[0] + unit_length / 2, origin[1] + height_length)) # 2
-		layer_list.append((origin[0] - unit_length / 2, origin[1] + height_length)) # 3
-		layer_list.append((origin[0] - unit_length, origin[1])) # 4
-		layer_list.append((origin[0] - unit_length / 2, origin[1] - height_length)) # 5 
-		layer_list.append((origin[0] + unit_length / 2, origin[1] - height_length)) # 6
-
-		# number of points on an edge exclude two vertices
-		no_point_on_edge = lyr - 1 
-
-		# Append start vertext and points on edge , edge by edge
-		for edge in range(6):
-			v_start = layer_list[edge]
-			v_end = layer_list[(edge + 1) % 6]
-
-			lat_diff = (v_start[0] - v_end[0]) / (no_point_on_edge + 1)
-			lng_diff = (v_start[1] - v_end[1]) / (no_point_on_edge + 1)
-
- 			point_list.append(v_start)
-
-			for pt in range(1, no_point_on_edge + 1):
-				point_list.append((v_start[0] - pt * lat_diff, v_start[1] - pt * lng_diff))
-
-	print '%d points and %d layers generated' % (len(point_list), no_layer)
-
-	return point_list
-
-def plotMultiWeights(img_list, headings):
+def plotMultiWeights(img_list, headings, maxWeight):
 	size = len(headings)
 
 	fig = plt.figure()
 
 	cmhot = plt.get_cmap("hot")
 
+	print maxWeight
 	for i in range(size):
 		heading = headings[i]
 
@@ -182,24 +122,18 @@ def plotMultiWeights(img_list, headings):
 
 		ax = fig.add_subplot(1, size, i+1, projection='3d')
 		ax.scatter(x, y, z, s=50, c=np.abs(z), cmap=cmhot)
+		ax.set_zlim([0, float( maxWeight)])
 		ax.set_title('Heading %s' % heading)
 
 	plt.show()
 
 def plot3D(x, y, z):
-	# fig = plt.figure()
-	# ax = fig.add_subplot(111, projection='3d')
-	# # X, Y, Z = axes3d.get_test_data(0.05)
-	# ax.plot_wireframe(X, Y, Z, rstride=10, cstride=10)
-
-	# plt.show()
-
 	fig = plt.figure()
 	ax = fig.gca(projection='3d')
 
 	cmhot = plt.get_cmap("hot")
 	ax.scatter(x, y, z, s=50, c=np.abs(z), cmap=cmhot)
-	# ax.scatter(x, y, z, c=z)
+
 	plt.show()
 
 def plotNetwork(network):
@@ -222,9 +156,9 @@ def plotNetwork(network):
 
 
 if __name__ == '__main__':
-	network = snapRoadNetwork((40.693903, -73.983434), 0.0005, 0.0001)
-	print sum([len(path) for path in network])
-	plotNetwork(network)
+	# network = snapRoadNetwork((40.693903, -73.983434), 0.0005, 0.0001)
+	# print '%d locations sampled in network' % sum([len(path) for path in network])
+	# plotNetwork(network)
 
 
 	# path = [(40.693902999999999, -73.982433999999998), (40.694902999999996, -73.983434000000003)]
@@ -233,6 +167,72 @@ if __name__ == '__main__':
 	# print road
 	# print interpolate(road, 0.0001)
 
+
+# /Depricated
+# Convert geo coords (lat, lng) diff to distance in meters
+# lat: 0.0001 ~= 11.1m, lng 0.0001 ~= 8.5m
+# def geoDistance(ori, dst, method='vincenty'):
+# 	if method == 'vincenty':
+# 		distance = gpy.vincenty(ori, dst).meters
+# 	elif method == 'great_circle':
+# 		distance = gpy.great_circle(ori, dst).meters
+# 	else:
+# 		print('Error with geo_distance')
+
+# 	return distance	
+
+
+# /Depricated
+# Sample Location Generation 
+# def hexagon(origin = (0, 0), radius = 20, interval = 1):
+
+# 	print 'Generating hexagon points...'
+# 	# init point list with origin at layer 0
+# 	point_list = [(origin[0], origin[1])]
+
+# 	# number of layers to cover the area
+# 	# layer is the position of a hexagon
+# 	no_layer = int(math.ceil(radius / interval)) 
+
+# 	# Generate points layer by layer 
+# 	for lyr in range(1, no_layer + 1):
+# 		unit_length = interval * lyr
+# 		height_length = unit_length * math.sqrt(3) / 2
+
+# 		layer_list = []
+
+# 		# Create 6 vertices
+# 		#   3 o---o 2
+# 		#    / \ / \
+# 		# 4 o---o---o 1
+# 		#    \ / \ /
+# 		#   5 o---o 6
+# 		layer_list.append((origin[0] + unit_length, origin[1])) # 1
+# 		layer_list.append((origin[0] + unit_length / 2, origin[1] + height_length)) # 2
+# 		layer_list.append((origin[0] - unit_length / 2, origin[1] + height_length)) # 3
+# 		layer_list.append((origin[0] - unit_length, origin[1])) # 4
+# 		layer_list.append((origin[0] - unit_length / 2, origin[1] - height_length)) # 5 
+# 		layer_list.append((origin[0] + unit_length / 2, origin[1] - height_length)) # 6
+
+# 		# number of points on an edge exclude two vertices
+# 		no_point_on_edge = lyr - 1 
+
+# 		# Append start vertext and points on edge , edge by edge
+# 		for edge in range(6):
+# 			v_start = layer_list[edge]
+# 			v_end = layer_list[(edge + 1) % 6]
+
+# 			lat_diff = (v_start[0] - v_end[0]) / (no_point_on_edge + 1)
+# 			lng_diff = (v_start[1] - v_end[1]) / (no_point_on_edge + 1)
+
+#  			point_list.append(v_start)
+
+# 			for pt in range(1, no_point_on_edge + 1):
+# 				point_list.append((v_start[0] - pt * lat_diff, v_start[1] - pt * lng_diff))
+
+# 	print '%d points and %d layers generated' % (len(point_list), no_layer)
+
+# 	return point_list
 
 
 

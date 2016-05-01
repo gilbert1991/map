@@ -3,6 +3,7 @@ import os
 import pickle
 import ntpath as nt
 import numpy as np
+import cv2
 
 import setting as st
 import objects as obj
@@ -73,6 +74,12 @@ def extractImageParas(file_path, file_ext, noParas):
 
 	return image_list
 
+def showImage(file_path):
+	img = cv2.imread('/Users/Gilbert/Documents/Libraries/python/OpenSfM/data/lund/images/001.jpg')
+	cv2.imshow('query', img)
+	
+	cv2.waitKey(0)
+	cv2.destroyAllWindows()
 
 if __name__ == '__main__':
 	cleanDir("/Users/Gilbert/Documents/NYU/Master_Thesis/3D_Street_Navigator/image/dataset/", ".jpeg")
