@@ -41,7 +41,8 @@ def main(queryImage, queryDataset, extractFeature, FLANN, detector, isBRIEF):
 		network = mt.snapRoadNetwork(queryImage.location.geo, 0.0005, 0.0001)
 		# mt.plotNetwork(network)
 		pt_list = [pt for path in network for pt in path]
-		hh.buildDataset(st.path + "image/dataset/", pt_list, obj.CameraPara(size=(800, 800), fov=120, heading=headings, pitch=10)) # Download dataset images
+		# Download dataset images
+		hh.buildDataset(st.path + "image/dataset/", pt_list, obj.CameraPara(size=(800, 800), fov=120, heading=headings, pitch=10)) 
 	
 	img_list =  fh.extractImageParas(st.path + "image/dataset/", ".jpeg", 7) # 7 is the number of paras contained in file names
 

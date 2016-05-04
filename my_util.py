@@ -156,9 +156,9 @@ def plotNetwork(network):
 
 
 if __name__ == '__main__':
-	# network = snapRoadNetwork((40.693903, -73.983434), 0.0005, 0.0001)
-	# print '%d locations sampled in network' % sum([len(path) for path in network])
-	# plotNetwork(network)
+	network = snapRoadNetwork((40.693903, -73.983434), 0.0005, 0.0001)
+	print '%d locations sampled in network' % sum([len(path) for path in network])
+	plotNetwork(network)
 
 
 	# path = [(40.693902999999999, -73.982433999999998), (40.694902999999996, -73.983434000000003)]
