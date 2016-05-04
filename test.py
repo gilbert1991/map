@@ -105,16 +105,10 @@ def snapRoadTest():
 
 	print road
 
-def fivePointMatchTest():
-	src = np.array( ([0, 0],[0, 1],[0, 2],[0, 3],[0, 4],[0, 5],[0, 6],[0, 7]), dtype='float64' )
+def fivePointMatchTest(point1, point2):
+	result = gv.relative_pose_ransac(point1, point2, "NISTER", 0.01, 1000)
 
-	dst = np.array( ([1, 0],[1, 1],[1, 2],[1, 3],[1, 4],[1, 5],[1, 6],[1, 7]), dtype='float64' )
-	dst = np.array( ([0, 0],[0, 1],[0, 2],[0, 3],[0, 4],[0, 5],[0, 6],[0, 7]), dtype='float64' )
-
-	result = gv.relative_pose_ransac(src, dst, "NISTER", 0.01, 1000)
-	print result
-
-	return src, dst, result
+	return result
 
 def triangulationTest(src, dst, position, rotation):
 	points1 = gv.triangulation_triangulate(src, dst, position, rotation)
@@ -123,21 +117,18 @@ def triangulationTest(src, dst, position, rotation):
 	points2 = gv.triangulation_triangulate2(src, dst, position, rotation)
 	print points2
 
-def imageMatchTest(src, dst):
-	img1 = cv2.imread(src, 0)
-	img2 = cv2.imread(dst, 0)
-
-	kp1, des1 = feature.siftExtraction(img1)
-	kp2, des2 = feature.siftExtraction(img2)
-
-	matches = register.bruteForceMatch(des1, des2, 0.3)
-
-	drawMatches(img1, kp1, img2, kp2, matches)
-
 if __name__ == '__main__':
 	# snapRoadTest()
 	
 	# src, dst, result = fivePointMatchTest()
 	# triangulationTest(src, dst, result[:, :3], result[:, 3])
 
-	imageMatchTest(st.path + "test_1.jpeg", st.path + "test_2.jpeg")
+	T = register.positionEstimation(st.path + "test_1.jpeg", st.path + "test_2.jpeg")
+
+	print T
+
+
+
+
+
+

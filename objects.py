@@ -1,19 +1,17 @@
 # Image object
 class Image(object):
-	"""Image Object with location and other parameters"""
-	def __init__(self, location = None, cameraPara = None, filePath = None, feature = None, weight = None):
+	"""Image Object with location and other parameters
+	position = (lat, lng, alt)
+
+	"""
+	def __init__(self, position, filePath, rotation=None, cameraPara = None, feature = None, weight = None):
 		super(Image, self).__init__()
-		self.location = location
+		self.position = position
 		self.cameraPara = cameraPara
 		self.filePath = filePath
 		self.feature = feature
 		self.weight = weight
-
-# Sample Location with geo-coord and the layer it in
-class Location(object):
-	def __init__(self, geo = None, layer = None):
-		self.geo = geo
-		self.layer = layer
+		self.rotation = rotation
 
 class CameraPara(object):
 	"""docstring for CameraPara"""
