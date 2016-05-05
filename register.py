@@ -21,7 +21,7 @@ def positionEstimation(referPosition, referRotation, relativePosition, relativeR
 	queryRotation = referRotation.dot(np.linalg.inv(referRotation)).T
 	queryPosition = referPosition - np.linalg.inv(queryRotation.T).dot(relativePosition)
 
-	return queryRotation, queryPosition
+	return  queryPosition, queryRotation
 
 def relativePositionEstimation(imgPath1, imgPath2):
 	img1, img2 = cv2.imread(imgPath1, 0), cv2.imread(imgPath2, 0)
@@ -35,6 +35,9 @@ def relativePositionEstimation(imgPath1, imgPath2):
 
 	point1 = np.array(point1)
 	point2 = np.array(point2)
+
+	# print point1
+	# print point1-point2
 
 	T = pyopengv.relative_pose_ransac(point1, point2, "NISTER", 0.01, 1000)
 	R = T[:, :3]

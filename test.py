@@ -112,10 +112,10 @@ def fivePointMatchTest(point1, point2):
 
 def triangulationTest(src, dst, position, rotation):
 	points1 = gv.triangulation_triangulate(src, dst, position, rotation)
-	print points1
+	# print points1
 
 	points2 = gv.triangulation_triangulate2(src, dst, position, rotation)
-	print points2
+	# print points2
 
 if __name__ == '__main__':
 	# snapRoadTest()
@@ -123,9 +123,19 @@ if __name__ == '__main__':
 	# src, dst, result = fivePointMatchTest()
 	# triangulationTest(src, dst, result[:, :3], result[:, 3])
 
-	T = register.positionEstimation(st.path + "test_1.jpeg", st.path + "test_2.jpeg")
+	R, t = register.relativePositionEstimation(st.path + "test_1.jpeg", st.path + "test_2.jpeg")
+	x = np.arctan2(R[2][1], R[2][2]) * 180 / np.pi
+	y = np.arctan2(-R[2][0], np.linalg.norm([R[2][1], R[2][2]], ord=2)) * 180 / np.pi
+	z = np.arctan2(R[1][0], R[0][0]) * 180 / np.pi
+	print (x, y, z)
 
-	print T
+	rp = np.array([40.69435, -73.98329, 0])
+	rr = np.eye(3)
+	position, rotation = register.positionEstimation(rp, rr, t, R)
+
+	print position
+	print rotation
+	print (rp[0]/position[0], rp[1]/position[1])
 
 
 
