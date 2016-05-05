@@ -6,9 +6,29 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import sys
+import cv2
 
 import objects as obj
 import http_handler as hh
+import setting as st
+
+# boundary = [width, height]
+# Keep the w/h ratio 
+def resizeImage(inputFile, outputFile, boundary=[800, 800]):
+	img = cv2.imread(inputFile)
+
+	h_ratio, w_ratio = float(boundary[0]) / img.shape[0], float(boundary[1]) / img.shape[1]
+
+	ratio = h_ratio if h_ratio <= w_ratio else w_ratio
+
+	height, width = int(img.shape[1] * ratio), int(img.shape[0] * ratio)
+
+	out = cv2.resize(img, (height, width), interpolation = cv2.INTER_AREA)
+
+	cv2.imwrite(outputFile, out)
+
+	return width, height
+
 
 def snapRoadNetwork(origin, radius, interval):
 	print 'Snap road networks at (%f, %f) with radius %f' % (origin[0], origin[1], radius)
@@ -156,10 +176,11 @@ def plotNetwork(network):
 
 
 if __name__ == '__main__':
-	network = snapRoadNetwork((40.693903, -73.983434), 0.0005, 0.0001)
-	print '%d locations sampled in network' % sum([len(path) for path in network])
-	plotNetwork(network)
+	# network = snapRoadNetwork((40.693903, -73.983434), 0.0005, 0.0001)
+	# print '%d locations sampled in network' % sum([len(path) for path in network])
+	# plotNetwork(network)
 
+	resizeImage(st.path + "image/query/IMG_4357.JPG", st.path + "image/query/IMG_4357_3.JPG")
 
 	# path = [(40.693902999999999, -73.982433999999998), (40.694902999999996, -73.983434000000003)]
 	# # path = interpolate([v1, v2], interval)

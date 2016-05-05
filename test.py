@@ -122,21 +122,30 @@ if __name__ == '__main__':
 	
 	# src, dst, result = fivePointMatchTest()
 	# triangulationTest(src, dst, result[:, :3], result[:, 3])
+	# img1 = st.path + "test_1.jpeg"
+	# img2 = st.path + "test_2.jpeg"
+	# R, t = register.relativePositionEstimation(img2, img1)
+	# x = np.arctan2(R[2][1], R[2][2]) * 180 / np.pi
+	# y = np.arctan2(-R[2][0], np.linalg.norm([R[2][1], R[2][2]], ord=2)) * 180 / np.pi
+	# z = np.arctan2(R[1][0], R[0][0]) * 180 / np.pi
+	# print (x, y, z)
+	# print t
 
-	R, t = register.relativePositionEstimation(st.path + "test_1.jpeg", st.path + "test_2.jpeg")
-	x = np.arctan2(R[2][1], R[2][2]) * 180 / np.pi
-	y = np.arctan2(-R[2][0], np.linalg.norm([R[2][1], R[2][2]], ord=2)) * 180 / np.pi
-	z = np.arctan2(R[1][0], R[0][0]) * 180 / np.pi
-	print (x, y, z)
+	# rp = np.array([40.69435, -73.98329, 0])
+	# rr = np.eye(3)
+	# position, rotation = register.positionEstimation(rp, rr, t, R)
 
-	rp = np.array([40.69435, -73.98329, 0])
-	rr = np.eye(3)
-	position, rotation = register.positionEstimation(rp, rr, t, R)
+	# print position
+	# print rotation
+	# print (rp[0]/position[0], rp[1]/position[1])
 
-	print position
-	print rotation
-	print (rp[0]/position[0], rp[1]/position[1])
+	img = cv2.imread(st.path + "image/query/IMG_4354.JPG")
+	res = cv2.resize(img, (800, 600), interpolation = cv2.INTER_AREA)
+	cv2.imwrite(st.path + "image/query/IMG_4354_2.JPG", res)
 
+	cv2.imshow('Matched Features', res)
+	cv2.waitKey(0)
+	cv2.destroyWindow('Matched Features')
 
 
 

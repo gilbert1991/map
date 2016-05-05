@@ -5,73 +5,118 @@ import http_handler as hh
 import file_handler as fh
 import my_util as mt
 import objects as obj
-import register as rgstr
+import register
 import feature as ftr
-import vote as vt
+import vote 
 import setting as st
-
-
-headings = [0, 90, 180, 270] 
 
 def plotMap(img_list):
 	# Plot vote map
-	geo_list = [img.location.geo for img in img_list]
+	geo_list = [img.position for img in img_list]
 	mt.plot3D([geo[0] for geo in geo_list], [geo[1] for geo in geo_list], [img.weight for img in img_list])
 
-def main(queryImage, queryDataset, extractFeature, FLANN, detector, isBRIEF):
+def initQuery(queryImage, detector, isBRIEF):
+	print 'Start init query image'
 	# Load query image and extract 'detector' feature 
-	if isinstance(queryImage, obj.Image):
-		location  = queryImage.location
+	if queryImage.filePath is None:
+		queryImage.filePath = st.path + 'image/query/test.jpeg'
+		
 		cameraPara = queryImage.cameraPara
-
-		encoded_args = hh.encodeStreetArgs(location.geo, cameraPara.size, cameraPara.fov, cameraPara.heading, cameraPara.pitch);
+		encoded_args = hh.encodeStreetArgs(queryImage.position, cameraPara.size, cameraPara.fov, cameraPara.heading, cameraPara.pitch);
 		fh.img2File(hh.getStreetView(encoded_args), queryImage.filePath) # Load Image
 
-		_, des_query, _ = ftr.featureExtraction(detector, isBRIEF, queryImage.filePath) # feature extraction for query
-	elif isinstance(queryImage, str):
-		_, des_query, _ = ftr.featureExtraction(detector, isBRIEF, queryImage) # feature extraction for query
-	else:
-		print 'Query image format error'
+		print 'Loaded image from Google StreetView'
 
-	
+	else:
+		width, height = mt.resizeImage(queryImage.filePath, queryImage.filePath, [800, 800])
+		queryImage.cameraPara.size = (width, height)
+
+		print 'Loaded image from %s and resized image to %s' % (queryImage.filePath, queryImage.cameraPara.size)
+
+
+	_, des_query, _ = ftr.featureExtraction(detector, isBRIEF, queryImage.filePath) # feature extraction for query
+
+	return des_query
+
+def buildDataset(queryImage, dataType, dataPath, headings, detector, isBRIEF):
+	print 'Start building dataset'
+
+	featureFilePath = st.path + "%s%s_set.txt" % ('B' if isBRIEF else '', detector)
+	dataSetCameraPara = queryImage.cameraPara
+	dataSetCameraPara.heading = headings
+
 	# Load dataset images from server and extract 'detector' features
-	if queryDataset:
-		fh.cleanDir(st.path + "image/dataset/", ".jpeg")
-		# pt_list = mt.hexagon(query.location.geo, 0.0002, 0.0001) # Generate sample point list
-		network = mt.snapRoadNetwork(queryImage.location.geo, 0.0005, 0.0001)
-		# mt.plotNetwork(network)
+	if dataType == 'LOCAL':
+		network = mt.snapRoadNetwork(queryImage.position, 0.0005, 0.0001)
 		pt_list = [pt for path in network for pt in path]
-		# Download dataset images
-		hh.buildDataset(st.path + "image/dataset/", pt_list, obj.CameraPara(size=(800, 800), fov=120, heading=headings, pitch=10)) 
-	
-	img_list =  fh.extractImageParas(st.path + "image/dataset/", ".jpeg", 7) # 7 is the number of paras contained in file names
 
+		fh.cleanDir(dataPath, ".jpeg")	
+		hh.buildDataset(dataPath, pt_list, dataSetCameraPara)	
 
-	if extractFeature:
-		_, des_dataset = ftr.patchExtraction(st.path + "image/dataset/", detector, isBRIEF, ".jpeg") # Extract features from images and write the features into file
-		fh.writeList(des_dataset, st.path + "%s%s_set.txt" % ('B' if isBRIEF else '', detector)) # Write extracted features into file
+		_, des_dataset = ftr.patchExtraction(dataPath, detector, isBRIEF, ".jpeg") # Extract features from images and write the features into file
+		fh.writeList(des_dataset, featureFilePath) # Write extracted features into file
+
+	elif dataType == 'ORIENT':
+		fh.cleanDir(dataPath, ".jpeg")
+		hh.buildDataset(dataPath, [queryImage.position], dataSetCameraPara)
+
+		_, des_dataset = ftr.patchExtraction(dataPath, detector, isBRIEF, ".jpeg") # Extract features from images and write the features into file
+		fh.writeList(des_dataset, featureFilePath) # Write extracted features into file
+
 	else:
-		des_dataset = fh.readList(st.path + "%s%s_set.txt" % ('B' if isBRIEF else '', detector)) # Read pre-extracted features from file
+		des_dataset = fh.readList(featureFilePath) # Read pre-extracted features from file
 
+	img_list =  fh.extractImageParas(dataPath, ".jpeg", 7) # 7 is the number of paras contained in file names
 
-	# Feature Registration
+	return img_list, des_dataset
+
+def matching(des_query, des_dataset, method, K, detector, isBRIEF):
+	print 'Start matching query and dataset features'
+
+	resultFilePath = st.path + "%s%s_result.txt" % ('B' if isBRIEF else '', detector)
+	distFilePath = "%s%s_dist.txt" % ('B' if isBRIEF else '', detector)
+
 	# result: size(des_query) x K
 	# dist: size(des_query) x K
-	if FLANN:		
+	if method == 'FLANN':		
 		args = {'algorithm': 'kmeans', 'branching': 32, 'iterations': 12, 'checks': 10}
-		result, dist = rgstr.FLANN(numpy.vstack(des_dataset), numpy.array(des_query), 3, args)
-		fh.writeList(result, st.path + "%s%s_result.txt" % ('B' if isBRIEF else '', detector)) # Write extracted features into file
-		fh.writeList(dist, st.path + "%s%s_dist.txt" % ('B' if isBRIEF else '', detector)) # Write extracted features into file
+		result, dist = register.FLANN(numpy.vstack(des_dataset), numpy.array(des_query), K, args)
+		fh.writeList(result, resultFilePath) # Write extracted features into file
+		fh.writeList(dist, distFilePath) # Write extracted features into file
+	elif method == 'BRUTE':
+		register.bruteForceMatch(des_query, des_dataset, 0.3, K=2)
 	else:
-		result = fh.readList(st.path + "%s%s_result.txt" % ('B' if isBRIEF else '', detector)) # Read pre-extracted features from file
-		dist = fh.readList(st.path + "%s%s_dist.txt" % ('B' if isBRIEF else '', detector)) # Read pre-extracted features from file
+		result = fh.readList(resultFilePath) # Read pre-extracted features from file
+		dist = fh.readList(distFilePath) # Read pre-extracted features from file
+
+	return result, dist
+
+def main():
+	detector, isBRIEF = 'SIFT', False
+
+	queryImage = obj.Image(
+		position=[40.693903, -73.983434], 
+		cameraPara=obj.CameraPara(size =(800, 800), fov = 100, heading = 90, pitch = 20),
+		filePath=st.path + 'image/query/IMG_4352.JPG')
+
+	# Localization
+	# des_query = initQuery(queryImage, detector, isBRIEF)
+	# img_list, des_dataset = buildDataset(queryImage, 'LOCAL', st.path + 'image/local/', headings, detector, isBRIEF)
+	# result, dist = matching(des_query, des_dataset, 'FLANN', 2, detector, isBRIEF)
+	# img_list, votes, maxImage = vote.neighborVoting(des_dataset, img_list, result, dist)
+	# # analysis = vote.analysisHeadingWeights(img_list, headings)
+	# print (maxImage.position, maxImage.cameraPara.heading, maxImage.weight)
 
 
+	# Orientation Estimation
+	des_query = initQuery(queryImage, detector, isBRIEF)
 
-	img_list, votes, maxImage = vt.neighborVoting(des_dataset, img_list, result, dist)
-
-	analysis = vt.analysisHeadingWeights(img_list, headings)
-	# print (maxImage.location.geo, maxImage.cameraPara.heading, maxImage.weight)
+	headings = [queryImage.cameraPara.heading + dev * 10 for dev in range(-1, 2)]
+	img_list, des_dataset = buildDataset(queryImage, 'ORIENT', st.path + 'image/orient/', headings, detector, isBRIEF)
+	result, dist = matching(des_query, des_dataset, 'FLANN', 2, detector, isBRIEF)
+	img_list, votes, maxImage = vote.neighborVoting(des_dataset, img_list, result, dist)
+	# analysis = vote.analysisHeadingWeights(img_list, headings)
+	print (maxImage.position, maxImage.cameraPara.heading, maxImage.weight)
 
 
 	# plotMap(img_list)
@@ -81,12 +126,7 @@ def main(queryImage, queryDataset, extractFeature, FLANN, detector, isBRIEF):
 	
 
 if __name__ == '__main__':
-	queryImage = obj.Image(obj.Location([40.693903, -73.983434], 0), 
-					obj.CameraPara(size =(800, 800), fov = 120, heading = 90, pitch = 0),
-						st.path + 'image/query.jpeg')
-
-	# main(queryImage=queryImage, queryDataset=True, extractFeature=True, FLANN=True, detector='SIFT', isBRIEF=False)
-	main(queryImage=queryImage, queryDataset=False, extractFeature=False, FLANN=False, detector='SIFT', isBRIEF=False)
+	main()
 
 	
 

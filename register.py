@@ -45,11 +45,11 @@ def relativePositionEstimation(imgPath1, imgPath2):
 
 	return R, t
 
-def bruteForceMatch(des1, des2, ratio, k=2):
+def bruteForceMatch(des1, des2, ratio, K=2):
 	# BFMatcher with default params
 	bf = cv2.BFMatcher()
 	# matches[0][0] - distance, trainIdx, queryIdx, imgIdx
-	matches = bf.knnMatch(des1, des2, k) # k-nearest
+	matches = bf.knnMatch(des1, des2, K) # k-nearest
 
 	# Apply ratio test
 	good = []

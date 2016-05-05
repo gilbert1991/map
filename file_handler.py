@@ -67,7 +67,7 @@ def extractImageParas(file_path, file_ext, noParas):
 		# All file names should contain parameters in the same format
 		if len(p) == noParas:
 			p = map(float, p)
-			image = obj.Image(obj.Location([p[0], p[1]], 0), obj.CameraPara(size = (p[2], p[3]), fov = p[4], heading = p[5], pitch = p[6]), filePath = f)
+			image = obj.Image(position=[p[0], p[1]], cameraPara=obj.CameraPara(size = (p[2], p[3]), fov = p[4], heading = p[5], pitch = p[6]), filePath = f)
 			image_list.append(image)
 		else:
 			print "Extract image parameters from %s failed" % file_name
