@@ -62,8 +62,8 @@ def drawMatches(img1, kp1, img2, kp2, matches):
     for m in matches:
 
         # Get the matching keypoints for each of the images
-        img1_idx = m[0].queryIdx
-        img2_idx = m[0].trainIdx
+        img1_idx = m.queryIdx
+        img2_idx = m.trainIdx
 
         # x - columns
         # y - rows
@@ -80,7 +80,7 @@ def drawMatches(img1, kp1, img2, kp2, matches):
         # Draw a line in between the two points
         # thickness = 1
         # colour blue
-        cv2.line(out, (int(x1),int(y1)), (int(x2)+cols1,int(y2)), (255, 0, 0), 1)
+        # cv2.line(out, (int(x1),int(y1)), (int(x2)+cols1,int(y2)), (255, 0, 0), 1)
 
 
     # Show the image
@@ -90,6 +90,53 @@ def drawMatches(img1, kp1, img2, kp2, matches):
 
     # Also return the image if you'd like a copy
     return out
+def ransacTest():
+	MIN_MATCH_COUNT = 10
+
+	img1 = cv2.imread(st.path + "/image/test1.jpg",0)          # queryImage
+	img2 = cv2.imread(st.path + "/image/test2.jpg",0) # trainImage
+
+	# Initiate SIFT detector
+	sift = cv2.SIFT()
+
+	# find the keypoints and descriptors with SIFT
+	kp1, des1 = sift.detectAndCompute(img1,None)
+	kp2, des2 = sift.detectAndCompute(img2,None)
+
+	FLANN_INDEX_KDTREE = 0
+	index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+	search_params = dict(checks = 50)
+
+	flann = cv2.FlannBasedMatcher(index_params, search_params)
+
+	matches = flann.knnMatch(des1,des2,k=2)
+
+	# store all the good matches as per Lowe's ratio test.
+	good = []
+	for m,n in matches:
+		if m.distance < 0.7*n.distance:
+			good.append(m)
+
+	if len(good)>MIN_MATCH_COUNT:
+	    src_pts = np.float32([ kp1[m.queryIdx].pt for m in good ]).reshape(-1,1,2)
+	    dst_pts = np.float32([ kp2[m.trainIdx].pt for m in good ]).reshape(-1,1,2)
+
+	    M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC,5.0)
+	    matchesMask = mask.ravel().tolist()
+
+	    h,w = img1.shape
+	    pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
+	    dst = cv2.perspectiveTransform(pts,M)
+
+	    # img2 = cv2.polylines(img2,[np.int32(dst)],True,255,3, cv2.CV_AA)
+
+	else:
+	    print "Not enough matches are found - %d/%d" % (len(good),MIN_MATCH_COUNT)
+	    matchesMask = None
+
+	img3 = drawMatches(img1,kp1,img2,kp2,good)
+
+	plt.imshow(img3, 'gray'),plt.show()
 
 def snapRoadTest():
 	fh.cleanDir(st.path + "image/sfm/", ".jpeg")
@@ -138,16 +185,6 @@ if __name__ == '__main__':
 	# print position
 	# print rotation
 	# print (rp[0]/position[0], rp[1]/position[1])
-
-	img = cv2.imread(st.path + "image/query/IMG_4354.JPG")
-	res = cv2.resize(img, (800, 600), interpolation = cv2.INTER_AREA)
-	cv2.imwrite(st.path + "image/query/IMG_4354_2.JPG", res)
-
-	cv2.imshow('Matched Features', res)
-	cv2.waitKey(0)
-	cv2.destroyWindow('Matched Features')
-
-
-
+	ransacTest()
 
 

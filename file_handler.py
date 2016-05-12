@@ -75,7 +75,7 @@ def extractImageParas(file_path, file_ext, noParas):
 	return image_list
 
 def showImage(file_path):
-	img = cv2.imread('/Users/Gilbert/Documents/Libraries/python/OpenSfM/data/lund/images/001.jpg')
+	img = cv2.imread(file_path)
 	cv2.imshow('query', img)
 	
 	cv2.waitKey(0)

@@ -21,60 +21,60 @@ def resizeImage(inputFile, outputFile, boundary=[800, 800]):
 
 	ratio = h_ratio if h_ratio <= w_ratio else w_ratio
 
-	height, width = int(img.shape[1] * ratio), int(img.shape[0] * ratio)
+	width, height = int(img.shape[1] * ratio), int(img.shape[0] * ratio)
 
-	out = cv2.resize(img, (height, width), interpolation = cv2.INTER_AREA)
+	out = cv2.resize(img, (width, height), interpolation = cv2.INTER_AREA)
 
 	cv2.imwrite(outputFile, out)
 
 	return width, height
 
 
-def snapRoadNetwork(origin, radius, interval):
+def snapRoadNetwork(origin, radius, interval, sector):
 	print 'Snap road networks at (%f, %f) with radius %f' % (origin[0], origin[1], radius)
 	network = []
 
-	# Slice a circle into 8 sectors with 2*radius
-	sector = 8
+	# Slice a circle into sectors with 2*radius
 	vertices = sliceCircle(origin, radius * 2, sector)
+	biSec = sector / 2
+	triSec = sector / 3
 
 	# Create virtual paths for road snapping
 	for idx in range(0, sector):
-		v1 = vertices[idx]
-		v2 = vertices[(idx+2) % sector]
+		road, reverse_road = twoPointsSnap([vertices[idx], vertices[(idx+biSec) % sector]], origin, radius, interval)
 
-		path = [v1, v2]
-
-		# snap path to road 
-		road = hh.parseJsonRoad(hh.snapToRoad(path))
-		# interpolate the road and snap again to get optimized sample locations
-		road = hh.parseJsonRoad(hh.snapToRoad(interpolate(road, interval)))		
-		filterPath(road, interval)		
-		
-		#reverse the query to better cover the area
-		reverse_road = hh.parseJsonRoad(hh.snapToRoad(list(reversed(road)))) if road else []		
-		reverse_road = hh.parseJsonRoad(hh.snapToRoad(interpolate(reverse_road, interval)))
-		filterPath(reverse_road, interval)
-		
-		# Exclude points beyond radius
-		road = [pt for pt in road if np.sqrt((pt[1]-origin[1])**2+(pt[0]-origin[0])**2) < radius]
-		reverse_road = [pt for pt in reverse_road if np.sqrt((pt[1]-origin[1])**2+(pt[0]-origin[0])**2) < radius]
-
-		# Add path to sample network
 		network.append(road)
-		network.append(reverse_road)
+		# network.append(reverse_road)
 
-	# places = [pt for road in network for pt in road]
-	# for idx in list(reversed(range(len(places)))):
-	# 	for idx2 in list(reversed(range(len(places), idx+1))):
-	# 		if np.sqrt((places[idx][1]-places[idx2][1])**2+(places[idx][0]-places[idx2][0])**2) < interval:
-	# 			del places[idx2]
+		# road, reverse_road = twoPointsSnap([vertices[idx], vertices[(idx+triSec) % sector]], origin, radius, interval)
 
-	# network = places
-	# network.append([])
+		# network.append(road)
+		# network.append(reverse_road)
+
+	# plotNetwork(network)
 
 	return network
 
+def twoPointsSnap(path, origin, radius, interval):
+	# snap path to road 
+	road = hh.parseJsonRoad(hh.snapToRoad(path))
+	# interpolate the road and snap again to get optimized sample locations
+	road = hh.parseJsonRoad(hh.snapToRoad(interpolate(road, interval)))		
+	road = filterPath(road, interval)		
+	
+	#reverse the query to better cover the area
+	reverse_road = hh.parseJsonRoad(hh.snapToRoad(list(reversed(road)))) if road else []		
+	reverse_road = hh.parseJsonRoad(hh.snapToRoad(interpolate(reverse_road, interval)))
+	reverse_road = filterPath(reverse_road, interval)
+	
+	# print (len(road), len(reverse_road))
+	# Exclude points beyond radius*1.5
+	road = [pt for pt in road if np.sqrt((pt[1]-origin[1])**2+(pt[0]-origin[0])**2) < radius*1.3]
+	reverse_road = [pt for pt in reverse_road if np.sqrt((pt[1]-origin[1])**2+(pt[0]-origin[0])**2) < radius*1.3]
+	# print (len(road), len(reverse_road))
+
+	return road, reverse_road
+	
 def filterPath(path, interval):
 	# Filter the samples with density 1/interval
 	for i in list(reversed(range(len(path)))):
@@ -135,7 +135,7 @@ def plotMultiWeights(img_list, headings, maxWeight):
 		heading = headings[i]
 
 		sub_list = [img for img in img_list if img.cameraPara.heading == heading]
-		geo_list = [img.location.geo for img in sub_list]
+		geo_list = [img.position for img in sub_list]
 		x = [geo[0] for geo in geo_list]
 		y = [geo[1] for geo in geo_list]
 		z = [img.weight for img in sub_list]
@@ -163,6 +163,7 @@ def plotNetwork(network):
 	fig, ax = plt.subplots()
 
 	for path in network:
+		print len(path)
 		x = []
 		y = []
 		for p in path:
@@ -176,11 +177,12 @@ def plotNetwork(network):
 
 
 if __name__ == '__main__':
-	# network = snapRoadNetwork((40.693903, -73.983434), 0.0005, 0.0001)
-	# print '%d locations sampled in network' % sum([len(path) for path in network])
-	# plotNetwork(network)
+	network = snapRoadNetwork((40.693935, -73.983245), 0.0005, 0.0001, 8)
+	print '%d locations sampled in network' % sum([len(path) for path in network])
+	plotNetwork(network)
 
-	resizeImage(st.path + "image/query/IMG_4357.JPG", st.path + "image/query/IMG_4357_3.JPG")
+	# width, height = resizeImage(st.path + "image/query/bobst.jpg", st.path + "image/query/bobst_1.jpg")
+	# print (width, height)
 
 	# path = [(40.693902999999999, -73.982433999999998), (40.694902999999996, -73.983434000000003)]
 	# # path = interpolate([v1, v2], interval)

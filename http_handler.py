@@ -13,6 +13,10 @@ snap_road_key = "AIzaSyBYkXXULu2MoMzpS48_DPQ1u2tt8UNREsg"
 
 # Snap to road from list of points
 def snapToRoad(path):
+	# if not path:
+	# 	print 'Path is empty in snapToRoad'
+	# 	return
+
 	encoded_args = { 
 					'path': "|".join("%f,%f" % geo for geo in path),
 					'interpolate': 'true',
@@ -21,7 +25,7 @@ def snapToRoad(path):
 	response = requests.get(snap_road_base, encoded_args)
 
 	if response.status_code != 200:
-		print "Request http error: %d" % response.status_code
+		print "snapToRoad() request http error: %d" % response.status_code
 	else:
 		return json.loads(response.text)
 
@@ -42,13 +46,15 @@ def encodeStreetArgs(location, size, fov, heading, pitch):
 def getStreetView(encoded_args):
 	response = requests.get(street_view_base, encoded_args, stream=True)
 	if response.status_code != 200:
-		print "Request http error: %d" % response.status_code
+		print "getStreetView() request http error: %d" % response.status_code
 	else:
 		return response
 
 # Identify image in a circle area centered at center(lat, lng) with radius(meter)
 # interval(lat_interval, lng_interval)
 def buildDataset(dataset_path, point_list, cameraPara = None):
+	print 'Start loading StreetView images'
+
 	count = 0 
 
 	for pt in point_list:
