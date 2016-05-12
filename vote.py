@@ -50,7 +50,7 @@ def analysisHeadingWeights(img_list, headings):
 
 	# Sort weights according to headings
 	for img in img_list:
-		# get the index in headings
+		# get the index in headings pol
 		index = headings.index(img.cameraPara.heading)
 		# add weight to the array of its heading
 		weights_headings[index].append(img.weight)
