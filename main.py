@@ -105,7 +105,7 @@ def main(position, queryPath):
 
 	des_query = initQuery(queryImage, detector, isBRIEF)
 
-	isExist = True
+	isExist = False
 	# Localization
 	img_list, des_dataset = buildDataset(queryImage, 'LOCAL', isExist, st.path + 'image/local/', headings_1, detector, isBRIEF)
 	result, dist = matching(des_query, des_dataset, 'FLANN', isExist, 2, 'LOCAL_' + filePrefix)
